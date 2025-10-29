@@ -1,0 +1,43 @@
+{
+  "name": "banquet-booking-backend",
+  "version": "1.0.0",
+  "description": "Banquet booking system backend with TypeScript, Express, MongoDB",
+  "main": "dist/app.js",
+  "scripts": {
+    "start": "npm run build && node dist/app.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "build": "tsc",
+    "lint": "eslint src/**/*.ts",
+    "test": "jest",
+    "seed": "ts-node src/scripts/seed.ts",
+    "migrate:roles": "ts-node src/scripts/migrate-roles.ts",
+    "test:permissions": "ts-node src/scripts/test-permissions.ts",
+    "debug:permissions": "ts-node src/scripts/debug-permissions.ts",
+    "update:owner-permissions": "ts-node src/scripts/update-owner-permissions.ts"
+  },
+  "dependencies": {
+    "@vercel/node": "^5.3.24",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "helmet": "^7.0.0",
+    "joi": "^17.9.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.5.0",
+    "pino": "^10.1.0",
+    "pino-pretty": "^13.1.2",
+    "zod": "^4.1.7"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/joi": "^17.2.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.5.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.1.6"
+  }
+}
