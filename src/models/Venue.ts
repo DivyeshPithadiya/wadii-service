@@ -79,6 +79,11 @@ const venueSchema = new Schema<IVenue>(
           enum: ["flat", "per_guest"],
           required: true,
         },
+        inclusions: {
+          type: [String],
+          default: [],
+          required: false, // or true if you want it mandatory
+        },
       },
     ],
     cateringServiceVendor: [

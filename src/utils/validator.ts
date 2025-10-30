@@ -162,13 +162,15 @@ export const venueValidationSchemas = {
       .optional(),
 
     foodPackages: z
-      .object({
-        name: z.string(),
-        description: z.string(),
-        price: z.number(),
-        priceType: z.enum(["flat", " per_guest"]),
-        inclusions: z.string().array(),
-      })
+      .array(
+        z.object({
+          name: z.string(),
+          description: z.string(),
+          price: z.number(),
+          priceType: z.enum(["flat", "per_guest"]),
+          inclusions: z.array(z.string()),
+        })
+      )
       .optional(),
   }),
 
