@@ -166,11 +166,17 @@ export class ManagerService {
     userId: string
   ): Promise<IManagerAssignment[]> {
     // Verify user has access to this business
+
+
+
+    console.log("userId from service", userId);
     const hasAccess = await UserBusinessRole.findOne({
       userId: oid(userId),
       businessId: oid(businessId),
       role: { $in: ["owner", "developer"] },
     }).lean();
+
+    console.log("has access from service", hasAccess);
 
     if (!hasAccess) throw new Error("Access denied to this business");
 

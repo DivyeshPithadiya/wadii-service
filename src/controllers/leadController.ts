@@ -269,6 +269,8 @@ export class LeadController {
     try {
       const { startDate, endDate, venueId, businessId } = req.query;
 
+      console.log("hitting lead controller");
+
       if (!startDate || !endDate) {
         res.status(400).json({
           success: false,

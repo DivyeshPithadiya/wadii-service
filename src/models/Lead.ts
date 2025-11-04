@@ -72,7 +72,6 @@ const leadSchema = new Schema<ILead>(
           required: true,
           trim: true,
         },
-      
       },
     ],
     notes: {

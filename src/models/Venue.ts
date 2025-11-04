@@ -133,6 +133,7 @@ const venueSchema = new Schema<IVenue>(
             },
           },
         ],
+        default: [],
       },
     ],
     status: {

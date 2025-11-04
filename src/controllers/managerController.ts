@@ -50,6 +50,8 @@ export class ManagerController {
     req: BusinessManagersReq,
     res: Response
   ): Promise<void> {
+
+    console.log("user id from controller", req.user?.userId);
     try {
       if (!req.user?.userId) {
         res.status(401).json({ success: false, message: "Unauthorized" });
