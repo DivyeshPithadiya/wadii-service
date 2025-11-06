@@ -38,11 +38,51 @@ export interface IBooking extends Document {
     price: number;
     priceType: "flat" | "per_guest";
   };
-
-  // Services
-  services: Array<{
-    service: string;
-  }>;
+  cateringServiceVendor: {
+    name: {
+      type: String;
+      required: true;
+      trim: true;
+    };
+    email: {
+      type: String;
+      required: true;
+      trim: true;
+      lowercase: true;
+    };
+    phone: {
+      type: String;
+      required: true;
+      trim: true;
+    };
+  };
+  services: [
+    {
+      service: {
+        type: String;
+        required: true;
+        trim: true;
+      };
+      vendor: {
+        name: {
+          type: String;
+          required: true;
+          trim: true;
+        };
+        email: {
+          type: String;
+          required: true;
+          trim: true;
+          lowercase: true;
+        };
+        phone: {
+          type: String;
+          required: true;
+          trim: true;
+        };
+      };
+    }
+  ];
 
   // Payment
   payment: {

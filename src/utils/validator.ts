@@ -129,6 +129,7 @@ export const businessValidationSchemas = {
 };
 
 // ============== Venue ==============
+// ============== Venue ==============
 export const venueValidationSchemas = {
   create: z.object({
     businessId: objectId,
@@ -160,7 +161,6 @@ export const venueValidationSchemas = {
         coverImageUrl: urlString.nullable().optional(),
       })
       .optional(),
-
     foodPackages: z
       .array(
         z.object({
@@ -172,11 +172,34 @@ export const venueValidationSchemas = {
         })
       )
       .optional(),
+    cateringServiceVendor: z
+      .array(
+        z.object({
+          name: z.string(),
+          email: z.string().email(),
+          phone: z.string(),
+        })
+      )
+      .optional(),
+    services: z
+      .array(
+        z.object({
+          service: z.string(),
+          vendors: z.array(
+            z.object({
+              name: z.string(),
+              email: z.string().email(),
+              phone: z.string(),
+            })
+          ),
+        })
+      )
+      .optional(),
   }),
 
   update: z.object({
     venueName: z.string().optional(),
-    venueType: z.enum(["banquet", "lawn", "convention_centre"]).optional(),
+    venueType: z.enum(["banquet", "lawn", "convention_center"]).optional(),
     capacity: z
       .object({
         min: z.number().positive().optional(),
@@ -192,14 +215,59 @@ export const venueValidationSchemas = {
         pincode: z.string().optional(),
       })
       .optional(),
+    bookingPreferences: z
+      .object({
+        timings: z.object({
+          morning: z.object({ start: z.string(), end: z.string() }),
+          evening: z.object({ start: z.string(), end: z.string() }),
+          fullDay: z.object({ start: z.string(), end: z.string() }),
+        }),
+        notes: z.string().nullable().optional(),
+      })
+      .optional(),
     media: z
       .object({
         coverImageUrl: urlString.nullable().optional(),
       })
       .optional(),
     status: z.enum(["active", "inactive"]).optional(),
+    foodPackages: z
+      .array(
+        z.object({
+          name: z.string(),
+          description: z.string(),
+          price: z.number(),
+          priceType: z.enum(["flat", "per_guest"]),
+          inclusions: z.array(z.string()),
+        })
+      )
+      .optional(),
+    cateringServiceVendor: z
+      .array(
+        z.object({
+          name: z.string(),
+          email: z.string().email(),
+          phone: z.string(),
+        })
+      )
+      .optional(),
+    services: z
+      .array(
+        z.object({
+          service: z.string(),
+          vendors: z.array(
+            z.object({
+              name: z.string(),
+              email: z.string().email(),
+              phone: z.string(),
+            })
+          ),
+        })
+      )
+      .optional(),
   }),
 };
+
 
 export type UserRegisterInput = z.infer<typeof userValidationSchemas.register>;
 export type UserLoginInput = z.infer<typeof userValidationSchemas.login>;

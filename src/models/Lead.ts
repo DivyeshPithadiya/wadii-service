@@ -8,7 +8,6 @@ const leadSchema = new Schema<ILead>(
       ref: "Venue",
       required: true,
     },
-
     clientName: {
       type: String,
       required: true,
@@ -30,10 +29,21 @@ const leadSchema = new Schema<ILead>(
       required: true,
       trim: true,
     },
-    occasionDate: {
-      type: Date,
-      required: true,
+    // Date Range & Timing
+    eventDateRange: {
+      startDate: {
+        type: Date,
+        required: true,
+      },
+      endDate: {
+        type: Date,
+        required: true,
+      },
     },
+    // occasionDate: {
+    //   type: Date,
+    //   required: true,
+    // },
     numberOfGuests: {
       type: Number,
       required: true,
@@ -65,6 +75,24 @@ const leadSchema = new Schema<ILead>(
         required: true,
       },
     },
+    cateringServiceVendor: {
+      name: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      email: {
+        type: String,
+        required: true,
+        trim: true,
+        lowercase: true,
+      },
+      phone: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+    },
     services: [
       {
         service: {
@@ -72,8 +100,47 @@ const leadSchema = new Schema<ILead>(
           required: true,
           trim: true,
         },
+        vendor: {
+          name: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          email: {
+            type: String,
+            required: true,
+            trim: true,
+            lowercase: true,
+          },
+          phone: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+        },
       },
     ],
+    timeSlot: {
+      date: {
+        type: Date,
+        required: true,
+      },
+      startTime: {
+        type: String, // Format: "HH:mm" (e.g., "09:00")
+        required: true,
+        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+      },
+      endTime: {
+        type: String, // Format: "HH:mm" (e.g., "17:00")
+        required: true,
+        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+      },
+      slotType: {
+        type: String,
+        enum: ["setup", "event", "cleanup", "full_day"],
+        default: "event",
+      },
+    },
     notes: {
       type: String,
       default: "",
@@ -83,6 +150,10 @@ const leadSchema = new Schema<ILead>(
       default: undefined,
     },
     updatedBy: {
+      type: Schema.Types.ObjectId,
+      default: undefined,
+    },
+    lastModifiedBy: {
       type: Schema.Types.ObjectId,
       default: undefined,
     },

@@ -7,7 +7,11 @@ export interface ILead extends Document {
   contactNo: string;
   email: string;
   occasionType: string;
-  occasionDate: Date;
+  eventDateRange: {
+    startDate: Date;
+    endDate: Date;
+  };
+  // occasionDate: Date;
   numberOfGuests: number;
   leadStatus: "cold" | "warm" | "hot";
   package: {
@@ -16,14 +20,32 @@ export interface ILead extends Document {
     price: number;
     priceType: "flat" | "per_guest";
   };
-  services: Array<{
+  cateringServiceVendor: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  timeSlot: TimeSlot;
+  services?: Array<{
     service: string;
+    vendor?: {
+      name: string;
+      email: string;
+      phone: string;
+    };
   }>;
   notes?: string;
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
+  lastModifiedBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+}
+
+interface TimeSlot {
+  date: Date;
+  startTime: string; // Format: "HH:mm"
+  endTime: string; // Format: "HH:mm"
 }
 
 // DTO for creating a new lead
@@ -33,17 +55,31 @@ export interface CreateLeadDTO {
   contactNo: string;
   email: string;
   occasionType: string;
-  occasionDate: Date | undefined;
+  eventDateRange: {
+    startDate: Date;
+    endDate: Date;
+  };
   numberOfGuests: number;
   leadStatus?: "cold" | "warm" | "hot";
+  timeSlot: TimeSlot;
   package: {
     name: string;
     description: string;
     price: number;
     priceType: "flat" | "per_guest";
   };
+  cateringServiceVendor: {
+    name: string;
+    email: string;
+    phone: string;
+  };
   services?: Array<{
     service: string;
+    vendor?: {
+      name: string;
+      email: string;
+      phone: string;
+    };
   }>;
   notes?: string;
   createdBy?: Types.ObjectId;
@@ -52,10 +88,14 @@ export interface CreateLeadDTO {
 // DTO for updating a lead
 export interface UpdateLeadDTO {
   clientName?: string;
-  contactNo?: string;
+  contactN?: string;
   email?: string;
   occasionType?: string;
-  occasionDate?: Date | undefined;
+  eventDateRange?: {
+    startDate: Date;
+    endDate: Date;
+  };
+  timeSlot?: TimeSlot;
   numberOfGuests?: number;
   leadStatus?: "cold" | "warm" | "hot";
   package?: {
@@ -64,8 +104,18 @@ export interface UpdateLeadDTO {
     price: number;
     priceType: "flat" | "per_guest";
   };
+  cateringServiceVendor?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
   services?: Array<{
     service: string;
+    vendor?: {
+      name: string;
+      email: string;
+      phone: string;
+    };
   }>;
   notes?: string;
   updatedBy?: Types.ObjectId;

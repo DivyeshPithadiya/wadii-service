@@ -77,6 +77,25 @@ export interface IVenue extends Document<Types.ObjectId> {
       phone: string;
     }>;
   }>;
+  bookingPreferences?: {
+    timings: {
+      morning: {
+        start: string;
+        end: string;
+
+        evening: {
+          start: string;
+          end: string;
+        };
+        fullDay: {
+          start: string;
+          end: string;
+        };
+      };
+    };
+    notes: string;
+  };
+
   status: "active" | "inactive";
   createdBy?: Types.ObjectId | string;
   updatedBy?: Types.ObjectId | string;

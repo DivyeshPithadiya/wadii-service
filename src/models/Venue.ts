@@ -136,6 +136,23 @@ const venueSchema = new Schema<IVenue>(
         default: [],
       },
     ],
+    bookingPreferences: {
+      timings: {
+        morning: {
+          start: { type: String },
+          end: { type: String },
+        },
+        evening: {
+          start: { type: String },
+          end: { type: String },
+        },
+        fullDay: {
+          start: { type: String },
+          end: { type: String },
+        },
+      },
+      notes: { type: String, default: null },
+    },
     status: {
       type: String,
       enum: ["active", "inactive"],
