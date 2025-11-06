@@ -55,13 +55,12 @@ export class LeadService {
       }
 
       if (filters?.startDate || filters?.endDate) {
-        query.occasionDate = {};
-        if (filters.startDate) {
-          query.occasionDate.$gte = filters.startDate;
-        }
-        if (filters.endDate) {
-          query.occasionDate.$lte = filters.endDate;
-        }
+        query["eventDateRange.startDate"] = {
+          $lte: filters?.endDate || new Date("9999-12-31"),
+        };
+        query["eventDateRange.endDate"] = {
+          $gte: filters?.startDate || new Date("0001-01-01"),
+        };
       }
 
       const total = await Lead.countDocuments(query);
@@ -69,7 +68,9 @@ export class LeadService {
         .sort({ createdAt: -1 })
         .limit(filters?.limit || 50)
         .skip(filters?.skip || 0)
-        .populate("venueId", "venueName venueType");
+        .populate("venueId", "venueName venueType")
+        .populate("updatedBy", "firstName lastName")
+        .populate("createdBy", "firstName lastName email");
 
       return { leads, total };
     } catch (error:any) {
@@ -133,11 +134,14 @@ export class LeadService {
     updateData: Partial<ILead>
   ): Promise<ILead | null> {
     try {
+      console.log("Updating lead:", leadId, updateData);
       const lead = await Lead.findByIdAndUpdate(
         leadId,
         { ...updateData, updatedAt: new Date() },
         { new: true, runValidators: true }
-      ).populate("venueId", "venueName venueType");
+      )
+        .populate("venueId", "venueName venueType")
+        .populate("updatedBy", "firstName lastName");
 
       return lead;
     } catch (error:any) {

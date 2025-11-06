@@ -62,7 +62,7 @@ const leadSchema = new Schema<ILead>(
       },
       description: {
         type: String,
-        required: true,
+        required: false,
       },
       price: {
         type: Number,
@@ -103,18 +103,18 @@ const leadSchema = new Schema<ILead>(
         vendor: {
           name: {
             type: String,
-            required: true,
+            required: false,
             trim: true,
           },
           email: {
             type: String,
-            required: true,
+            required: false,
             trim: true,
             lowercase: true,
           },
           phone: {
             type: String,
-            required: true,
+            required: false,
             trim: true,
           },
         },
@@ -147,16 +147,9 @@ const leadSchema = new Schema<ILead>(
     },
     createdBy: {
       type: Schema.Types.ObjectId,
-      default: undefined,
+      ref: "User",
     },
-    updatedBy: {
-      type: Schema.Types.ObjectId,
-      default: undefined,
-    },
-    lastModifiedBy: {
-      type: Schema.Types.ObjectId,
-      default: undefined,
-    },
+    updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   {
     timestamps: true,

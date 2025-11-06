@@ -167,12 +167,9 @@ const bookingSchema = new Schema<IBooking>(
     // Tracking
     createdBy: {
       type: Schema.Types.ObjectId,
-      default: undefined,
+      ref: "User",
     },
-    updatedBy: {
-      type: Schema.Types.ObjectId,
-      default: undefined,
-    },
+    updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
     confirmedAt: {
       type: Date,
       default: null,

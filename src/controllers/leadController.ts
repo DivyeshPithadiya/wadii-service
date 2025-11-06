@@ -103,11 +103,9 @@ export class LeadController {
       const filters: LeadQueryFilters = {
         leadStatus: req.query.leadStatus as any,
         startDate: req.query.startDate
-          ? new Date(req.query.startDate )
+          ? new Date(req.query.startDate)
           : undefined,
-        endDate: req.query.endDate
-          ? new Date(req.query.endDate )
-          : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate) : undefined,
         limit: req.query.limit ? req.query.limit : 50,
         skip: req.query.skip ? req.query.skip : 0,
       };
@@ -132,8 +130,16 @@ export class LeadController {
    * Update lead
    */
   static async updateLead(req: UpdateLeadReq, res: Response): Promise<void> {
+    const start = Date.now();
+    console.log("🟡 [updateLead] Request started");
+
     try {
+      console.log("➡️  User:", req.user);
+      console.log("➡️  Params:", req.params);
+      console.log("➡️  Body:", req.body);
+
       if (!req.user?.userId) {
+        console.log("Unauthorized request - no userId found");
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
@@ -144,12 +150,23 @@ export class LeadController {
         updatedBy: oid(req.user.userId),
       };
 
+      console.log("🧩 Update Data:", updateData);
+
       const lead = await LeadService.updateLead(leadId, updateData);
 
       if (!lead) {
+        console.log("⚠️  Lead not found for ID:", leadId);
         res.status(404).json({ success: false, message: "Lead not found" });
         return;
       }
+
+      console.log("✅ Lead updated successfully:", {
+        leadId,
+        updatedBy: req.user.userId,
+      });
+
+      const duration = Date.now() - start;
+      console.log(`⏱️  updateLead completed in ${duration}ms`);
 
       res.status(200).json({
         success: true,
@@ -157,6 +174,9 @@ export class LeadController {
         data: lead,
       });
     } catch (error: any) {
+      console.error("💥 Error in updateLead:", error.message);
+      console.error(error.stack);
+
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -316,7 +336,6 @@ export class LeadController {
     }
   }
 
- 
   /**
    * Bulk update lead statuses
    */

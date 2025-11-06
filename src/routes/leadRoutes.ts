@@ -11,8 +11,50 @@ const leadRoutes = Router();
 
 // All lead routes require authentication + role resolution
 leadRoutes.use(authMiddleware, rolesMiddleware);
+const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
 
 // ----- Validation Schemas -----
+
+const timeSlotSchema = z.object({
+  date: z.coerce.date(),
+  startTime: z
+    .string()
+    .regex(timeRegex, "Start time must be in HH:mm format (e.g., 09:00)"),
+  endTime: z
+    .string()
+    .regex(timeRegex, "End time must be in HH:mm format (e.g., 17:00)"),
+  slotType: z
+    .enum(["setup", "event", "cleanup", "full_day"])
+    .default("event")
+    .optional(),
+});
+
+/**
+ * Package schema
+ */
+const packageSchema = z.object({
+  packageId: z.string().optional(),
+  descrition: z.string().optional(),
+  name: z.string().trim().min(1, "Package name is required"),
+  price: z.number().min(0, "Price must be positive"),
+  priceType: z.enum(["flat", "per_guest"]),
+});
+
+/**
+ * Service schema
+ */
+const serviceSchema = z.object({
+  service: z.string().trim().min(1, "Service name is required"),
+  vendor: z
+    .array(
+      z.object({
+        email: z.string().email(),
+        phone: z.string().min(10).max(15),
+        number: z.string().optional(),
+      })
+    )
+    .optional(),
+});
 
 const createLeadSchema = z.object({
   venueId: objectId,
@@ -20,55 +62,65 @@ const createLeadSchema = z.object({
   contactNo: z.string().min(1, "Contact number is required"),
   email: z.string().email("Invalid email format"),
   occasionType: z.string().min(1, "Occasion type is required"),
-  occasionDate: z.string().or(z.date()),
   numberOfGuests: z.number().min(1, "Number of guests must be at least 1"),
   leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
-  package: z.object({
-    name: z.string().min(1, "Package name is required"),
-    description: z.string().min(1, "Package description is required"),
-    price: z.number().min(0, "Price must be non-negative"),
-    priceType: z.enum(["flat", "per_guest"]),
-  }),
-  services: z
-    .array(
-      z.object({
-        service: z.string().min(1, "Service name is required"),
-      })
-    )
-    .optional(),
+  package: packageSchema.optional(),
+  services: z.array(serviceSchema).default([]).optional(),
   notes: z.string().optional(),
-});
-
-const updateLeadSchema = z.object({
-  clientName: z.string().min(1).optional(),
-  contactNo: z.string().min(1).optional(),
-  email: z.string().email().optional(),
-  occasionType: z.string().min(1).optional(),
-  occasionDate: z.string().or(z.date()).optional(),
-  numberOfGuests: z.number().min(1).optional(),
-  leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
-  package: z
+  cateringServiceVendor: z
     .object({
-      name: z.string().min(1),
-      description: z.string().min(1),
-      price: z.number().min(0),
-      priceType: z.enum(["flat", "per_guest"]),
+      name: z.string(),
+      email: z.string().email(),
+      phone: z.string(),
     })
     .optional(),
-  services: z
-    .array(
-      z.object({
-        service: z.string().min(1),
-        vendor: z.object({
-          name: z.string().min(1),
-          email: z.string().email(),
-          phone: z.string().min(1),
-        }),
-      })
-    )
-    .optional(),
-  notes: z.string().optional(),
+  eventDateRange: z
+    .object({
+      startDate: z.coerce.date(),
+      endDate: z.coerce.date(),
+    })
+    .refine((data) => data.endDate >= data.startDate, {
+      message: "End date must be after or equal to start date",
+      path: ["endDate"],
+    }),
+  timeSlot: timeSlotSchema,
 });
+
+const updateLeadSchema = z
+  .object({
+    clientName: z.string().min(1).optional(),
+    contactNo: z.string().min(1).optional(),
+    email: z.string().email().optional(),
+    occasionType: z.string().min(1).optional(),
+    numberOfGuests: z.number().min(1).optional(),
+    leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
+    package: packageSchema.optional(),
+    services: z.array(serviceSchema).default([]).optional(),
+    cateringServiceVendor: z
+      .object({
+        name: z.string(),
+        email: z.string().email(),
+        phone: z.string(),
+      })
+      .optional(),
+    eventDateRange: z
+      .object({
+        startDate: z.coerce.date(),
+        endDate: z.coerce.date(),
+      })
+      .refine((data) => data.endDate >= data.startDate, {
+        message: "End date must be after or equal to start date",
+        path: ["endDate"],
+      })
+      .optional(),
+    timeSlots: z
+      .array(timeSlotSchema)
+      .min(1, "At least one time slot is required")
+      .optional(),
+
+    notes: z.string().optional(),
+  })
+  .optional();
 
 const updateLeadStatusSchema = z.object({
   status: z.enum(["cold", "warm", "hot"]),
@@ -226,8 +278,6 @@ leadRoutes.get(
   LeadController.getLeadsByVenue
 );
 
-
-
 /**
  * Get venue lead statistics
  * GET /api/venues/:venueId/leads/stats
@@ -239,7 +289,5 @@ leadRoutes.get(
   requirePerm(ROLE_PERMS.LEAD_READ),
   LeadController.getVenueLeadStats
 );
-
-
 
 export default leadRoutes;

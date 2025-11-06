@@ -2,9 +2,8 @@
 import { Document, Types } from "mongoose";
 
 export interface ITimeSlot {
-  date: Date;
-  startTime: string; // Format: "HH:mm"
-  endTime: string; // Format: "HH:mm"
+  startDateTime: Date;
+  endDateTime: Date;
   slotType: "setup" | "event" | "cleanup" | "full_day";
 }
 
@@ -26,7 +25,7 @@ export interface IBooking extends Document {
     startDate: Date;
     endDate: Date;
   };
-  timeSlots: ITimeSlot[];
+  timeSlots: ITimeSlot;
 
   // Booking Status
   bookingStatus: "pending" | "confirmed" | "cancelled" | "completed";

@@ -97,6 +97,7 @@ export const businessValidationSchemas = {
         logoUrl: urlString.nullable().optional(),
       })
       .optional(),
+
     bookingPreferences: z
       .object({
         timings: z
@@ -128,8 +129,7 @@ export const businessValidationSchemas = {
   }),
 };
 
-// ============== Venue ==============
-// ============== Venue ==============
+
 export const venueValidationSchemas = {
   create: z.object({
     businessId: objectId,
