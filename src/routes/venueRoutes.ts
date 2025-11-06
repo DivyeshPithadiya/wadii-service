@@ -207,7 +207,7 @@ venueRoutes.put(
   validate("params", packageParam),
   validate("body", updatePackageSchema),
   requirePerm(ROLE_PERMS.VENUE_UPDATE),
-  VenueController.updateService
+  VenueController.updateFoodPackage
 );
 
 // List food packages - needs venue.read
