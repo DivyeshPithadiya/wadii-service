@@ -10,6 +10,8 @@ type Params = {
   businessId?: string;
   venueId?: string;
   serviceName?: string;
+  serviceId?: string;
+  packageId?: string;
 };
 type Query = Record<string, unknown>;
 type Body = ICreateVenueData;
@@ -448,7 +450,7 @@ export class VenueController {
    * DELETE /venues/:venueId/packages
    */
   static async removeFoodPackage(
-    req: Request<Params, any, ServicesAndVendorsBody, Query>,
+    req: Request<Params, any, any, Query>,
     res: Response
   ): Promise<void> {
     try {
@@ -703,7 +705,7 @@ export class VenueController {
    * DELETE /venues/:venueId/services
    */
   static async removeService(
-    req: Request<Params, any, ServicesAndVendorsBody, Query>,
+    req: Request<Params, any, any, Query>,
     res: Response
   ): Promise<void> {
     try {
@@ -773,6 +775,186 @@ export class VenueController {
       res.status(200).json({
         success: true,
         data: services,
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Update a food package
+   * PUT /venues/:venueId/packages/:packageId
+   */
+  static async updateFoodPackage(
+    req: Request<Params, any, any, Query>,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { venueId, packageId } = req.params;
+      const { name, description, price, priceType, inclusions } = req.body;
+
+      if (!venueId || !packageId) {
+        res.status(400).json({
+          success: false,
+          message: "venueId and packageId are required",
+        });
+        return;
+      }
+
+      const venue = await VenueService.updateFoodPackage(
+        venueId,
+        packageId,
+        { name, description, price, priceType, inclusions },
+        req.user.userId,
+        req.user.userId,
+        req.userRole as RoleSnapshot | undefined
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Food package updated successfully",
+        data: venue,
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Delete a food package
+   * DELETE /venues/:venueId/packages/:packageId
+   */
+  static async deleteFoodPackage(
+    req: Request<Params, any, any, Query>,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { venueId, packageId } = req.params;
+
+      if (!venueId || !packageId) {
+        res.status(400).json({
+          success: false,
+          message: "venueId and packageId are required",
+        });
+        return;
+      }
+
+      const venue = await VenueService.deleteFoodPackage(
+        venueId,
+        packageId,
+        req.user.userId,
+        req.user.userId,
+        req.userRole as RoleSnapshot | undefined
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Food package deleted successfully",
+        data: venue,
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Update a service
+   * PUT /venues/:venueId/services/:serviceId
+   */
+  static async updateService(
+    req: Request<Params, any, any, Query>,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { venueId, serviceId } = req.params;
+      const { serviceName } = req.body;
+
+      if (!venueId || !serviceId) {
+        res.status(400).json({
+          success: false,
+          message: "venueId and serviceId are required",
+        });
+        return;
+      }
+
+      if (!serviceName) {
+        res.status(400).json({
+          success: false,
+          message: "serviceName is required",
+        });
+        return;
+      }
+
+      const venue = await VenueService.updateService(
+        venueId,
+        serviceId,
+        serviceName,
+        req.user.userId,
+        req.user.userId,
+        req.userRole as RoleSnapshot | undefined
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Service updated successfully",
+        data: venue,
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Delete a service
+   * DELETE /venues/:venueId/services/:serviceId
+   */
+  static async deleteService(
+    req: Request<Params, any, any, Query>,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { venueId, serviceId } = req.params;
+
+      if (!venueId || !serviceId) {
+        res.status(400).json({
+          success: false,
+          message: "venueId and serviceId are required",
+        });
+        return;
+      }
+
+      const venue = await VenueService.deleteService(
+        venueId,
+        serviceId,
+        req.user.userId,
+        req.user.userId,
+        req.userRole as RoleSnapshot | undefined
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Service deleted successfully",
+        data: venue,
       });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });

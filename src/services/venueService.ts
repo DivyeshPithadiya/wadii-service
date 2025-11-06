@@ -876,6 +876,215 @@ export class VenueService {
       throw new Error("Failed to fetch venues");
     }
   }
+
+  /**
+   * Update a food package
+   */
+  static async updateFoodPackage(
+    venueId: string,
+    packageId: string,
+    packageData: Partial<IFoodPackage>,
+    updatedBy: string,
+    userId: string,
+    userRole?: RoleSnapshot
+  ) {
+    const venue = await Venue.findOne({ _id: oid(venueId) });
+    if (!venue) throw new Error("Venue not found");
+
+    // Permission check
+    if (!hasPerm(userRole, PERMS.VENUE_UPDATE)) {
+      const hasAccess = await UserBusinessRole.findOne({
+        userId: oid(userId),
+        businessId: venue.businessId,
+        $or: [
+          { role: "owner" },
+          { permissions: { $in: [PERMS.VENUE_UPDATE] } },
+        ],
+      }).lean();
+      if (!hasAccess) throw new Error("Permission denied");
+    }
+
+    if (!venue.foodPackages || venue.foodPackages.length === 0) {
+      throw new Error("No food packages found");
+    }
+
+    // Find the package index
+    const packageIndex = venue.foodPackages.findIndex(
+      (pkg: any) => pkg._id.toString() === packageId
+    );
+
+    if (packageIndex === -1) {
+      throw new Error("Food package not found");
+    }
+
+    // Update only provided fields
+    if (packageData.name !== undefined) {
+      venue.foodPackages[packageIndex].name = packageData.name;
+    }
+    if (packageData.description !== undefined) {
+      venue.foodPackages[packageIndex].description = packageData.description;
+    }
+    if (packageData.price !== undefined) {
+      venue.foodPackages[packageIndex].price = packageData.price;
+    }
+    if (packageData.priceType !== undefined) {
+      venue.foodPackages[packageIndex].priceType = packageData.priceType;
+    }
+    if (packageData.inclusions !== undefined) {
+      venue.foodPackages[packageIndex].inclusions = packageData.inclusions;
+    }
+
+    venue.updatedBy = updatedBy;
+    await venue.save();
+    return venue;
+  }
+
+  /**
+   * Delete a food package
+   */
+  static async deleteFoodPackage(
+    venueId: string,
+    packageId: string,
+    updatedBy: string,
+    userId: string,
+    userRole?: RoleSnapshot
+  ) {
+    const venue = await Venue.findOne({ _id: oid(venueId) });
+    if (!venue) throw new Error("Venue not found");
+
+    // Permission check
+    if (!hasPerm(userRole, PERMS.VENUE_UPDATE)) {
+      const hasAccess = await UserBusinessRole.findOne({
+        userId: oid(userId),
+        businessId: venue.businessId,
+        $or: [
+          { role: "owner" },
+          { permissions: { $in: [PERMS.VENUE_UPDATE] } },
+        ],
+      }).lean();
+      if (!hasAccess) throw new Error("Permission denied");
+    }
+
+    if (!venue.foodPackages || venue.foodPackages.length === 0) {
+      throw new Error("No food packages found");
+    }
+
+    // Find the package index
+    const packageIndex = venue.foodPackages.findIndex(
+      (pkg: any) => pkg._id.toString() === packageId
+    );
+
+    if (packageIndex === -1) {
+      throw new Error("Food package not found");
+    }
+
+    // Remove the package
+    venue.foodPackages.splice(packageIndex, 1);
+    venue.updatedBy = updatedBy;
+    await venue.save();
+    return venue;
+  }
+
+  /**
+   * Update a service
+   */
+  static async updateService(
+    venueId: string,
+    serviceId: string,
+    serviceName: string,
+    updatedBy: string,
+    userId: string,
+    userRole?: RoleSnapshot
+  ) {
+    const venue = await Venue.findOne({ _id: oid(venueId) });
+    if (!venue) throw new Error("Venue not found");
+
+    // Permission check
+    if (!hasPerm(userRole, PERMS.VENUE_UPDATE)) {
+      const hasAccess = await UserBusinessRole.findOne({
+        userId: oid(userId),
+        businessId: venue.businessId,
+        $or: [
+          { role: "owner" },
+          { permissions: { $in: [PERMS.VENUE_UPDATE] } },
+        ],
+      }).lean();
+      if (!hasAccess) throw new Error("Permission denied");
+    }
+
+    if (!venue.services || venue.services.length === 0) {
+      throw new Error("No services found");
+    }
+
+    // Find the service index
+    const serviceIndex = venue.services.findIndex(
+      (s: any) => s._id.toString() === serviceId
+    );
+
+    if (serviceIndex === -1) {
+      throw new Error("Service not found");
+    }
+
+    // Check if new service name already exists (excluding current service)
+    const serviceExists = venue.services.find(
+      (s: any, idx: number) => s.service === serviceName && idx !== serviceIndex
+    );
+    if (serviceExists) {
+      throw new Error("Service name already exists for this venue");
+    }
+
+    // Update service name
+    venue.services[serviceIndex].service = serviceName;
+    venue.updatedBy = updatedBy;
+    await venue.save();
+    return venue;
+  }
+
+  /**
+   * Delete a service
+   */
+  static async deleteService(
+    venueId: string,
+    serviceId: string,
+    updatedBy: string,
+    userId: string,
+    userRole?: RoleSnapshot
+  ) {
+    const venue = await Venue.findOne({ _id: oid(venueId) });
+    if (!venue) throw new Error("Venue not found");
+
+    // Permission check
+    if (!hasPerm(userRole, PERMS.VENUE_UPDATE)) {
+      const hasAccess = await UserBusinessRole.findOne({
+        userId: oid(userId),
+        businessId: venue.businessId,
+        $or: [
+          { role: "owner" },
+          { permissions: { $in: [PERMS.VENUE_UPDATE] } },
+        ],
+      }).lean();
+      if (!hasAccess) throw new Error("Permission denied");
+    }
+
+    if (!venue.services || venue.services.length === 0) {
+      throw new Error("No services found");
+    }
+
+    // Find the service index
+    const serviceIndex = venue.services.findIndex(
+      (s: any) => s._id.toString() === serviceId
+    );
+
+    if (serviceIndex === -1) {
+      throw new Error("Service not found");
+    }
+
+    // Remove the service
+    venue.services.splice(serviceIndex, 1);
+    venue.updatedBy = updatedBy;
+    await venue.save();
+    return venue;
+  }
 }
 
 

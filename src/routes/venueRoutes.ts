@@ -26,22 +26,39 @@ const foodPackageSchema = z.object({
   description: z.string().min(1, "Description is required"),
   price: z.number().min(0, "Price must be positive"),
   priceType: z.enum(["flat", "per_guest"]),
+  inclusions: z.array(z.string().min(1)).optional(),
 });
 
 const removeVendorSchema = z.object({
   vendorEmail: z.string().email("Valid email is required"),
 });
 
-const removePackageSchema = z.object({
-  packageName: z.string().min(1, "Package name is required"),
+const deletePackageSchema = z.object({
+  packageId: z.string().min(1, "Package Id is required"),
 });
-
+const updatePackageSchema = z.object({
+  name: z.string().optional(),
+  description: z.string().optional(),
+  price: z.number().optional(),
+  priceType: z.enum(["flat", "per_guest"]).optional(),
+  inclusions: z.array(z.string().min(1)).optional(),
+});
 const createServiceSchema = z.object({
   serviceName: z.string().min(1, "Service name is required"),
 });
 
-const removeServiceSchema = z.object({
-  serviceName: z.string().min(1, "Service name is required"),
+const updateServiceSchema = z.object({
+  serviceName: z.string().min(1, "Service Id is required"),
+});
+
+const serviceParam = z.object({
+  serviceId: z.string().min(1, "ServiceId is required"),
+  venueId: z.string().min(1, "VenueId is required"),
+});
+
+const packageParam = z.object({
+  venueId: z.string().min(1, "VenueId is required"),
+  packageId: z.string().min(1, "PackageId is required"),
 });
 
 // All venue routes require authentication + role snapshot
@@ -55,7 +72,6 @@ const paramsWithVenueAndService = z.object({
   venueId: objectId,
   serviceName: z.string().min(1, "Service name is required"),
 });
-
 
 // Create venue — needs venue.create
 venueRoutes.post(
@@ -105,7 +121,6 @@ venueRoutes.delete(
   VenueController.deleteVenue
 );
 
-
 // ----- Service Management Routes -----
 
 // Create a new service - needs venue.update
@@ -119,11 +134,17 @@ venueRoutes.post(
 
 // Remove a service - needs venue.update
 venueRoutes.delete(
-  "/:venueId/services",
-  validate("params", paramsWithVenueId),
-  validate("body", removeServiceSchema),
+  "/:venueId/services/:serviceId",
+  validate("params", serviceParam),
   requirePerm(ROLE_PERMS.VENUE_UPDATE),
-  VenueController.removeService
+  VenueController.deleteService
+);
+venueRoutes.put(
+  "/:venueId/services/:serviceId",
+  validate("params", serviceParam),
+  validate("body", updateServiceSchema),
+  requirePerm(ROLE_PERMS.VENUE_UPDATE),
+  VenueController.updateService
 );
 
 // List all services - needs venue.read
@@ -149,7 +170,6 @@ venueRoutes.post(
 venueRoutes.delete(
   "/:venueId/services/:serviceName/vendors",
   validate("params", paramsWithVenueAndService),
-  validate("body", removeVendorSchema),
   requirePerm(ROLE_PERMS.VENUE_UPDATE),
   VenueController.removeServiceVendor
 );
@@ -175,11 +195,19 @@ venueRoutes.post(
 
 // Remove food package - needs venue.update
 venueRoutes.delete(
-  "/:venueId/packages",
-  validate("params", paramsWithVenueId),
-  validate("body", removePackageSchema),
+  "/:venueId/packages/:packageId",
+  validate("params", packageParam),
+  validate("body", deletePackageSchema),
   requirePerm(ROLE_PERMS.VENUE_UPDATE),
   VenueController.removeFoodPackage
+);
+
+venueRoutes.put(
+  "/:venueId/packages/:packageId",
+  validate("params", packageParam),
+  validate("body", updatePackageSchema),
+  requirePerm(ROLE_PERMS.VENUE_UPDATE),
+  VenueController.updateService
 );
 
 // List food packages - needs venue.read
