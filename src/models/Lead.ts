@@ -33,11 +33,11 @@ const leadSchema = new Schema<ILead>(
     eventDateRange: {
       startDate: {
         type: Date,
-        required: true,
+        required: false,
       },
       endDate: {
         type: Date,
-        required: true,
+        required: false,
       },
     },
     // occasionDate: {
@@ -137,7 +137,7 @@ const leadSchema = new Schema<ILead>(
       },
       slotType: {
         type: String,
-        enum: ["setup", "event", "cleanup", "full_day"],
+        enum: ["setup", "event", "cleanup", "full_day","selected_days"],
         default: "event",
       },
     },

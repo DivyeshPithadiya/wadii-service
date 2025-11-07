@@ -24,7 +24,7 @@ const timeSlotSchema = z.object({
     .string()
     .regex(timeRegex, "End time must be in HH:mm format (e.g., 17:00)"),
   slotType: z
-    .enum(["setup", "event", "cleanup", "full_day"])
+    .enum(["setup", "event", "cleanup", "full_day", "selected_days"])
     .default("event")
     .optional(),
 });
@@ -43,18 +43,33 @@ const packageSchema = z.object({
 /**
  * Service schema
  */
-const serviceSchema = z.object({
-  service: z.string().trim().min(1, "Service name is required"),
-  vendor: z
-    .array(
-      z.object({
-        email: z.string().email(),
-        phone: z.string().min(10).max(15),
-        number: z.string().optional(),
-      })
-    )
-    .optional(),
+export const serviceSchema = z.object({
+  service: z.string(),
+  vendor: z.object({
+    name: z.string(),
+    email: z.string().email().optional(),
+    phone: z.string().optional(),
+  }),
 });
+
+const eventDateRangeSchema = z
+  .object({
+    startDate: z
+      .string()
+      .trim()
+      .min(1, "Start date is required")
+      .transform((val) => new Date(val)),
+    endDate: z
+      .string()
+      .trim()
+      .min(1, "End date is required")
+      .transform((val) => new Date(val)),
+  })
+  .refine((data) => data.endDate >= data.startDate, {
+    message: "End date must be after or equal to start date",
+    path: ["endDate"],
+  });
+
 
 const createLeadSchema = z.object({
   venueId: objectId,
@@ -64,8 +79,39 @@ const createLeadSchema = z.object({
   occasionType: z.string().min(1, "Occasion type is required"),
   numberOfGuests: z.number().min(1, "Number of guests must be at least 1"),
   leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
+  package: packageSchema,
+  services: z.array(serviceSchema)
+    .refine(
+      (arr) => new Set(arr.map((s) => s.service)).size === arr.length,
+      "Only one vendor per service is allowed"
+    )
+    .optional(),
+  notes: z.string().optional(),
+  cateringServiceVendor: z
+    .object({
+      name: z.string(),
+      email: z.string().email(),
+      phone: z.string(),
+    }),
+  eventDateRange: eventDateRangeSchema.optional(),
+  timeSlot: timeSlotSchema,
+});
+
+const updateLeadSchema = z.object({
+  venueId: objectId.optional(),
+  clientName: z.string().min(1).optional(),
+  contactNo: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  occasionType: z.string().min(1).optional(),
+  numberOfGuests: z.number().min(1).optional(),
+  leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
   package: packageSchema.optional(),
-  services: z.array(serviceSchema).default([]).optional(),
+  services: z.array(serviceSchema)
+    .refine(
+      (arr) => new Set(arr.map((s) => s.service)).size === arr.length,
+      "Only one vendor per service is allowed"
+    )
+    .optional(),
   notes: z.string().optional(),
   cateringServiceVendor: z
     .object({
@@ -74,53 +120,9 @@ const createLeadSchema = z.object({
       phone: z.string(),
     })
     .optional(),
-  eventDateRange: z
-    .object({
-      startDate: z.coerce.date(),
-      endDate: z.coerce.date(),
-    })
-    .refine((data) => data.endDate >= data.startDate, {
-      message: "End date must be after or equal to start date",
-      path: ["endDate"],
-    }),
-  timeSlot: timeSlotSchema,
+  eventDateRange: eventDateRangeSchema.optional(),
+  timeSlot: timeSlotSchema.optional(),
 });
-
-const updateLeadSchema = z
-  .object({
-    clientName: z.string().min(1).optional(),
-    contactNo: z.string().min(1).optional(),
-    email: z.string().email().optional(),
-    occasionType: z.string().min(1).optional(),
-    numberOfGuests: z.number().min(1).optional(),
-    leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
-    package: packageSchema.optional(),
-    services: z.array(serviceSchema).default([]).optional(),
-    cateringServiceVendor: z
-      .object({
-        name: z.string(),
-        email: z.string().email(),
-        phone: z.string(),
-      })
-      .optional(),
-    eventDateRange: z
-      .object({
-        startDate: z.coerce.date(),
-        endDate: z.coerce.date(),
-      })
-      .refine((data) => data.endDate >= data.startDate, {
-        message: "End date must be after or equal to start date",
-        path: ["endDate"],
-      })
-      .optional(),
-    timeSlots: z
-      .array(timeSlotSchema)
-      .min(1, "At least one time slot is required")
-      .optional(),
-
-    notes: z.string().optional(),
-  })
-  .optional();
 
 const updateLeadStatusSchema = z.object({
   status: z.enum(["cold", "warm", "hot"]),
