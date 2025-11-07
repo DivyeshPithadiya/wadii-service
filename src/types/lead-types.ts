@@ -7,32 +7,28 @@ export interface ILead extends Document {
   contactNo: string;
   email: string;
   occasionType: string;
-  eventDateRange: {
-    startDate: Date;
-    endDate: Date;
-  };
-  // occasionDate: Date;
   numberOfGuests: number;
   leadStatus: "cold" | "warm" | "hot";
-  package: {
+  timeSlot: TimeSlot;
+  package?: {
     name: string;
-    description: string;
+    description?: string;
     price: number;
     priceType: "flat" | "per_guest";
   };
-  cateringServiceVendor: {
+  cateringServiceVendor?: {
     name: string;
     email: string;
     phone: string;
   };
-  timeSlot: TimeSlot;
   services?: Array<{
     service: string;
     vendor?: {
-      name: string;
-      email: string;
-      phone: string;
+      name?: string;
+      email?: string;
+      phone?: string;
     };
+    price: number;
   }>;
   notes?: string;
   createdBy?: Types.ObjectId;
@@ -46,6 +42,7 @@ interface TimeSlot {
   date: Date;
   startTime: string; // Format: "HH:mm"
   endTime: string; // Format: "HH:mm"
+  slotType?: "setup" | "event" | "cleanup" | "full_day";
 }
 
 // DTO for creating a new lead
@@ -55,52 +52,12 @@ export interface CreateLeadDTO {
   contactNo: string;
   email: string;
   occasionType: string;
-  eventDateRange: {
-    startDate: Date;
-    endDate: Date;
-  };
   numberOfGuests: number;
   leadStatus?: "cold" | "warm" | "hot";
   timeSlot: TimeSlot;
-  package: {
-    name: string;
-    description: string;
-    price: number;
-    priceType: "flat" | "per_guest";
-  };
-  cateringServiceVendor: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  services?: Array<{
-    service: string;
-    vendor?: {
-      name: string;
-      email: string;
-      phone: string;
-    };
-  }>;
-  notes?: string;
-  createdBy?: Types.ObjectId;
-}
-
-// DTO for updating a lead
-export interface UpdateLeadDTO {
-  clientName?: string;
-  contactN?: string;
-  email?: string;
-  occasionType?: string;
-  eventDateRange?: {
-    startDate: Date;
-    endDate: Date;
-  };
-  timeSlot?: TimeSlot;
-  numberOfGuests?: number;
-  leadStatus?: "cold" | "warm" | "hot";
   package?: {
     name: string;
-    description: string;
+    description?: string;
     price: number;
     priceType: "flat" | "per_guest";
   };
@@ -112,10 +69,44 @@ export interface UpdateLeadDTO {
   services?: Array<{
     service: string;
     vendor?: {
-      name: string;
-      email: string;
-      phone: string;
+      name?: string;
+      email?: string;
+      phone?: string;
     };
+    price: number;
+  }>;
+  notes?: string;
+  createdBy?: Types.ObjectId;
+}
+
+// DTO for updating a lead
+export interface UpdateLeadDTO {
+  clientName?: string;
+  contactNo?: string;
+  email?: string;
+  occasionType?: string;
+  timeSlot?: TimeSlot;
+  numberOfGuests?: number;
+  leadStatus?: "cold" | "warm" | "hot";
+  package?: {
+    name: string;
+    description?: string;
+    price: number;
+    priceType: "flat" | "per_guest";
+  };
+  cateringServiceVendor?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  services?: Array<{
+    service: string;
+    vendor?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+    };
+    price: number;
   }>;
   notes?: string;
   updatedBy?: Types.ObjectId;

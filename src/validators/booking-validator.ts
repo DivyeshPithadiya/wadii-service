@@ -28,7 +28,7 @@ const timeSlotSchema = z.object({
  */
 const packageSchema = z.object({
   name: z.string().trim().min(1, "Package name is required"),
-  description: z.string().min(1, "Package description is required"),
+  description: z.string().optional(),
   price: z.number().min(0, "Price must be positive"),
   priceType: z.enum(["flat", "per_guest"]),
 });
@@ -38,13 +38,14 @@ const packageSchema = z.object({
  */
 const serviceSchema = z.object({
   service: z.string().trim().min(1, "Service name is required"),
-  vendor: z.array(
-    z.object({
-      email: z.string().email(),
-      phone: z.string().min(10).max(15),
-      number: z.string().optional(),
+  vendor: z
+    .object({
+      name: z.string().optional(),
+      email: z.string().email().optional(),
+      phone: z.string().min(10).max(15).optional(),
     })
-  ).optional(),
+    .optional(),
+  price: z.number().min(0, "Price must be positive").default(0),
 });
 
 /**
@@ -62,29 +63,33 @@ export const createBookingSchema = z
       .number()
       .int()
       .min(1, "Number of guests must be at least 1"),
-    eventDateRange: z
+    bookingStatus: z
+      .enum(["pending", "confirmed", "cancelled", "completed"])
+      .default("pending")
+      .optional(),
+    timeSlot: timeSlotSchema,
+    package: packageSchema.optional(),
+    cateringServiceVendor: z
       .object({
-        startDate: z.coerce.date(),
-        endDate: z.coerce.date(),
+        name: z.string(),
+        email: z.string().email(),
+        phone: z.string(),
       })
-      .refine((data) => data.endDate >= data.startDate, {
-        message: "End date must be after or equal to start date",
-        path: ["endDate"],
-      }),
-    timeSlots: z
-      .array(timeSlotSchema)
-      .min(1, "At least one time slot is required"),
-    package: packageSchema,
-    services: z.array(serviceSchema).default([]),
+      .optional(),
+    services: z.array(serviceSchema).optional(),
     payment: z.object({
       totalAmount: z.number().min(0, "Total amount must be positive"),
       advanceAmount: z
         .number()
         .min(0, "Advance amount must be positive")
         .default(0),
+      paymentStatus: z
+        .enum(["unpaid", "partially_paid", "paid"])
+        .default("unpaid")
+        .optional(),
     }),
-    notes: z.string().default(""),
-    internalNotes: z.string().default(""),
+    notes: z.string().optional(),
+    internalNotes: z.string().optional(),
   })
   .refine((data) => data.payment.advanceAmount <= data.payment.totalAmount, {
     message: "Advance amount cannot exceed total amount",
@@ -96,30 +101,33 @@ export const createBookingSchema = z
  */
 export const updateBookingSchema = z
   .object({
-    venueId: z.string().optional(),
     clientName: z.string().trim().min(1).optional(),
     contactNo: z.string().trim().min(1).optional(),
     email: z.string().trim().toLowerCase().email().optional(),
     occasionType: z.string().trim().min(1).optional(),
     numberOfGuests: z.number().int().min(1).optional(),
-    eventDateRange: z
-      .object({
-        startDate: z.coerce.date(),
-        endDate: z.coerce.date(),
-      })
-      .refine((data) => data.endDate >= data.startDate, {
-        message: "End date must be after or equal to start date",
-        path: ["endDate"],
-      })
-      .optional(),
-    timeSlots: z.array(timeSlotSchema).min(1).optional(),
-    package: packageSchema.optional(),
-    services: z.array(serviceSchema).optional(),
-    notes: z.string().optional(),
-    internalNotes: z.string().optional(),
     bookingStatus: z
       .enum(["pending", "confirmed", "cancelled", "completed"])
       .optional(),
+    timeSlot: timeSlotSchema.optional(),
+    package: packageSchema.optional(),
+    cateringServiceVendor: z
+      .object({
+        name: z.string(),
+        email: z.string().email(),
+        phone: z.string(),
+      })
+      .optional(),
+    services: z.array(serviceSchema).optional(),
+    payment: z
+      .object({
+        totalAmount: z.number().min(0, "Total amount must be positive").optional(),
+        advanceAmount: z.number().min(0, "Advance amount must be positive").optional(),
+        paymentStatus: z.enum(["unpaid", "partially_paid", "paid"]).optional(),
+      })
+      .optional(),
+    notes: z.string().optional(),
+    internalNotes: z.string().optional(),
   })
   .partial();
 

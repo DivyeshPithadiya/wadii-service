@@ -29,21 +29,6 @@ const leadSchema = new Schema<ILead>(
       required: true,
       trim: true,
     },
-    // Date Range & Timing
-    eventDateRange: {
-      startDate: {
-        type: Date,
-        required: true,
-      },
-      endDate: {
-        type: Date,
-        required: true,
-      },
-    },
-    // occasionDate: {
-    //   type: Date,
-    //   required: true,
-    // },
     numberOfGuests: {
       type: Number,
       required: true,
@@ -55,43 +40,49 @@ const leadSchema = new Schema<ILead>(
       default: "cold",
     },
     package: {
-      name: {
-        type: String,
-        required: true,
-        trim: true,
+      type: {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        description: {
+          type: String,
+          required: false,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        priceType: {
+          type: String,
+          enum: ["flat", "per_guest"],
+          required: true,
+        },
       },
-      description: {
-        type: String,
-        required: false,
-      },
-      price: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
-      priceType: {
-        type: String,
-        enum: ["flat", "per_guest"],
-        required: true,
-      },
+      required: false,
     },
     cateringServiceVendor: {
-      name: {
-        type: String,
-        required: true,
-        trim: true,
+      type: {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        email: {
+          type: String,
+          required: true,
+          trim: true,
+          lowercase: true,
+        },
+        phone: {
+          type: String,
+          required: true,
+          trim: true,
+        },
       },
-      email: {
-        type: String,
-        required: true,
-        trim: true,
-        lowercase: true,
-      },
-      phone: {
-        type: String,
-        required: true,
-        trim: true,
-      },
+      required: false,
     },
     services: [
       {
@@ -101,22 +92,31 @@ const leadSchema = new Schema<ILead>(
           trim: true,
         },
         vendor: {
-          name: {
-            type: String,
-            required: false,
-            trim: true,
+          type: {
+            name: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            email: {
+              type: String,
+              required: false,
+              trim: true,
+              lowercase: true,
+            },
+            phone: {
+              type: String,
+              required: false,
+              trim: true,
+            },
           },
-          email: {
-            type: String,
-            required: false,
-            trim: true,
-            lowercase: true,
-          },
-          phone: {
-            type: String,
-            required: false,
-            trim: true,
-          },
+          required: false,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+          default: 0,
         },
       },
     ],
@@ -159,15 +159,14 @@ const leadSchema = new Schema<ILead>(
 
 // Indexes
 leadSchema.index({ venueId: 1 });
-
 leadSchema.index({ leadStatus: 1 });
-leadSchema.index({ occasionDate: 1 });
 leadSchema.index({ createdAt: -1 });
 leadSchema.index({ email: 1 });
 leadSchema.index({ contactNo: 1 });
+leadSchema.index({ "timeSlot.date": 1 });
 
 // Compound indexes for common queries
 leadSchema.index({ venueId: 1, leadStatus: 1 });
-leadSchema.index({ venueId: 1, occasionDate: 1 });
+leadSchema.index({ venueId: 1, "timeSlot.date": 1 });
 
 export const Lead = mongoose.model<ILead>("Lead", leadSchema);
