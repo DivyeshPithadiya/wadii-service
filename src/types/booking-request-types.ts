@@ -91,8 +91,16 @@ export interface CheckAvailabilityReq extends Request {
     venueId: string;
   };
   query: {
-    startDate: string;
-    endDate: string;
+    date: string;
     excludeBookingId?: string;
+  };
+}
+
+export interface DeleteBookingReq extends Request {
+  params: {
+    bookingId: string;
+  };
+  user?: {
+    userId: string;
   };
 }

@@ -61,18 +61,18 @@ export class BookingService {
       }
 
       if (filters?.startDate || filters?.endDate) {
-        query["eventDateRange.startDate"] = {};
+        query["timeSlot.date"] = {};
         if (filters.startDate) {
-          query["eventDateRange.startDate"].$gte = filters.startDate;
+          query["timeSlot.date"].$gte = filters.startDate;
         }
         if (filters.endDate) {
-          query["eventDateRange.startDate"].$lte = filters.endDate;
+          query["timeSlot.date"].$lte = filters.endDate;
         }
       }
 
       const total = await Booking.countDocuments(query);
       const bookings = await Booking.find(query)
-        .sort({ "eventDateRange.startDate": 1 })
+        .sort({ "timeSlot.date": 1 })
         .limit(filters?.limit || 50)
         .skip(filters?.skip || 0)
         .populate("venueId", "venueName venueType")
@@ -183,20 +183,14 @@ export class BookingService {
    */
   static async checkSlotAvailability(
     venueId: string,
-    startDate: Date,
-    endDate: Date,
+    date: Date,
     excludeBookingId?: string
   ): Promise<boolean> {
     try {
       const query: any = {
         venueId,
         bookingStatus: { $in: ["pending", "confirmed"] },
-        $or: [
-          {
-            "eventDateRange.startDate": { $lte: endDate },
-            "eventDateRange.endDate": { $gte: startDate },
-          },
-        ],
+        "timeSlot.date": date,
       };
 
       if (excludeBookingId) {
@@ -207,6 +201,18 @@ export class BookingService {
       return conflictingBookings === 0;
     } catch (error: any) {
       throw new Error(`Error checking slot availability: ${error.message}`);
+    }
+  }
+
+  /**
+   * Hard delete booking (permanent deletion)
+   */
+  static async deleteBooking(bookingId: string): Promise<IBooking | null> {
+    try {
+      const booking = await Booking.findByIdAndDelete(oid(bookingId));
+      return booking;
+    } catch (error: any) {
+      throw new Error(`Error deleting booking: ${error.message}`);
     }
   }
 }

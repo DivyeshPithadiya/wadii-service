@@ -42,7 +42,7 @@ const serviceSchema = z.object({
     .object({
       name: z.string().optional(),
       email: z.string().email().optional(),
-      phone: z.string().min(10).max(15).optional(),
+      phone: z.string().min(10).optional(),
     })
     .optional(),
   price: z.number().min(0, "Price must be positive").default(0),
@@ -101,6 +101,7 @@ export const createBookingSchema = z
  */
 export const updateBookingSchema = z
   .object({
+    venueId: z.string().optional(),
     clientName: z.string().trim().min(1).optional(),
     contactNo: z.string().trim().min(1).optional(),
     email: z.string().trim().toLowerCase().email().optional(),
@@ -121,8 +122,14 @@ export const updateBookingSchema = z
     services: z.array(serviceSchema).optional(),
     payment: z
       .object({
-        totalAmount: z.number().min(0, "Total amount must be positive").optional(),
-        advanceAmount: z.number().min(0, "Advance amount must be positive").optional(),
+        totalAmount: z
+          .number()
+          .min(0, "Total amount must be positive")
+          .optional(),
+        advanceAmount: z
+          .number()
+          .min(0, "Advance amount must be positive")
+          .optional(),
         paymentStatus: z.enum(["unpaid", "partially_paid", "paid"]).optional(),
       })
       .optional(),
@@ -163,8 +170,7 @@ export const bookingQuerySchema = z.object({
  * Check availability query schema
  */
 export const checkAvailabilitySchema = z.object({
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().min(1, "End date is required"),
+  date: z.string().min(1, "Date is required"),
   excludeBookingId: z.string().optional(),
 });
 
