@@ -32,14 +32,15 @@ export class BookingController {
         return;
       }
       // Check slot availability before creating
-      if (!req.body.timeSlot || !req.body.timeSlot.date) {
-        res.status(400).json({ success: false, message: "Invalid time slot" });
+      if (!req.body.eventStartDateTime || !req.body.eventEndDateTime) {
+        res.status(400).json({ success: false, message: "Invalid datetime range" });
         return;
       }
 
       const isAvailable = await BookingService.checkSlotAvailability(
         req.body.venueId,
-        new Date(req.body.timeSlot.date)
+        new Date(req.body.eventStartDateTime),
+        new Date(req.body.eventEndDateTime)
       );
 
       if (!isAvailable) {
@@ -155,8 +156,8 @@ export class BookingController {
       console.log("Booking ID:", bookingId);
 
       // If updating time slot, check availability
-      if (req.body.timeSlot?.date) {
-        console.log("Time slot update detected. Checking availability…");
+      if (req.body.eventStartDateTime || req.body.eventEndDateTime) {
+        console.log("DateTime update detected. Checking availability…");
 
         const currentBooking = await BookingService.getBookingById(bookingId);
         console.log("Current Booking:", currentBooking);
@@ -169,9 +170,18 @@ export class BookingController {
           return;
         }
 
+        // Use existing values if not provided in update
+        const startDateTime = req.body.eventStartDateTime
+          ? new Date(req.body.eventStartDateTime)
+          : currentBooking.eventStartDateTime;
+        const endDateTime = req.body.eventEndDateTime
+          ? new Date(req.body.eventEndDateTime)
+          : currentBooking.eventEndDateTime;
+
         const isAvailable = await BookingService.checkSlotAvailability(
           (currentBooking.venueId as any)._id?.toString() || currentBooking.venueId.toString(),
-          new Date(req.body.timeSlot.date),
+          startDateTime,
+          endDateTime,
           bookingId
         );
 
@@ -348,20 +358,21 @@ export class BookingController {
   ): Promise<void> {
     try {
       const { venueId } = req.params;
-      const { date, excludeBookingId } = req.query;
+      const { eventStartDateTime, eventEndDateTime, excludeBookingId } = req.query;
 
-      if (!date) {
+      if (!eventStartDateTime || !eventEndDateTime) {
         res.status(400).json({
           success: false,
-          message: "Date is required",
+          message: "Event start and end datetime are required",
         });
         return;
       }
 
       const isAvailable = await BookingService.checkSlotAvailability(
         venueId,
-        new Date(date),
-        excludeBookingId
+        new Date(eventStartDateTime as string),
+        new Date(eventEndDateTime as string),
+        excludeBookingId as string
       );
 
       res.status(200).json({

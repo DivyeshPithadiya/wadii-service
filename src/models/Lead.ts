@@ -120,26 +120,30 @@ const leadSchema = new Schema<ILead>(
         },
       },
     ],
-    timeSlot: {
-      date: {
-        type: Date,
-        required: true,
+    // DateTime Range (Updated Structure)
+    eventStartDateTime: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    eventEndDateTime: {
+      type: Date,
+      required: true,
+      validate: {
+        validator: function (this: any, value: Date): boolean {
+          // Skip validation if eventStartDateTime is not set (during partial updates)
+          if (!this.eventStartDateTime) {
+            return true;
+          }
+          return value > this.eventStartDateTime;
+        },
+        message: "End datetime must be after start datetime",
       },
-      startTime: {
-        type: String, // Format: "HH:mm" (e.g., "09:00")
-        required: true,
-        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-      },
-      endTime: {
-        type: String, // Format: "HH:mm" (e.g., "17:00")
-        required: true,
-        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-      },
-      slotType: {
-        type: String,
-        enum: ["setup", "event", "cleanup", "full_day"],
-        default: "event",
-      },
+    },
+    slotType: {
+      type: String,
+      enum: ["setup", "event", "cleanup", "full_day"],
+      default: "event",
     },
     notes: {
       type: String,
@@ -163,10 +167,11 @@ leadSchema.index({ leadStatus: 1 });
 leadSchema.index({ createdAt: -1 });
 leadSchema.index({ email: 1 });
 leadSchema.index({ contactNo: 1 });
-leadSchema.index({ "timeSlot.date": 1 });
+leadSchema.index({ eventStartDateTime: 1 });
+leadSchema.index({ eventEndDateTime: 1 });
 
 // Compound indexes for common queries
 leadSchema.index({ venueId: 1, leadStatus: 1 });
-leadSchema.index({ venueId: 1, "timeSlot.date": 1 });
+leadSchema.index({ venueId: 1, eventStartDateTime: 1 });
 
 export const Lead = mongoose.model<ILead>("Lead", leadSchema);

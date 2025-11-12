@@ -11,23 +11,8 @@ const leadRoutes = Router();
 
 // All lead routes require authentication + role resolution
 leadRoutes.use(authMiddleware, rolesMiddleware);
-const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
 
 // ----- Validation Schemas -----
-
-const timeSlotSchema = z.object({
-  date: z.coerce.date(),
-  startTime: z
-    .string()
-    .regex(timeRegex, "Start time must be in HH:mm format (e.g., 09:00)"),
-  endTime: z
-    .string()
-    .regex(timeRegex, "End time must be in HH:mm format (e.g., 17:00)"),
-  slotType: z
-    .enum(["setup", "event", "cleanup", "full_day"])
-    .default("event")
-    .optional(),
-});
 
 /**
  * Package schema
@@ -49,7 +34,7 @@ const serviceSchema = z.object({
     .object({
       name: z.string().optional(),
       email: z.string().email().optional(),
-      phone: z.string().min(10).max(15).optional(),
+      phone: z.string().optional(),
     })
     .optional(),
   price: z.number().min(0, "Price must be positive").default(0),
@@ -63,7 +48,9 @@ const createLeadSchema = z.object({
   occasionType: z.string().min(1, "Occasion type is required"),
   numberOfGuests: z.number().min(1, "Number of guests must be at least 1"),
   leadStatus: z.enum(["cold", "warm", "hot"]).default("cold"),
-  timeSlot: timeSlotSchema,
+  eventStartDateTime: z.coerce.date(),
+  eventEndDateTime: z.coerce.date(),
+  slotType: z.enum(["setup", "event", "cleanup", "full_day"]).default("event"),
   package: packageSchema.optional(),
   services: z.array(serviceSchema).optional(),
   notes: z.string().optional(),
@@ -74,7 +61,13 @@ const createLeadSchema = z.object({
       phone: z.string(),
     })
     .optional(),
-});
+}).refine(
+  (data) => new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime),
+  {
+    message: "End datetime must be after start datetime",
+    path: ["eventEndDateTime"],
+  }
+);
 
 const updateLeadSchema = z
   .object({
@@ -84,7 +77,9 @@ const updateLeadSchema = z
     occasionType: z.string().min(1).optional(),
     numberOfGuests: z.number().min(1).optional(),
     leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
-    timeSlot: timeSlotSchema.optional(),
+    eventStartDateTime: z.coerce.date().optional(),
+    eventEndDateTime: z.coerce.date().optional(),
+    slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
     package: packageSchema.optional(),
     services: z.array(serviceSchema).optional(),
     cateringServiceVendor: z

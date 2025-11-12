@@ -55,12 +55,13 @@ export class LeadService {
       }
 
       if (filters?.startDate || filters?.endDate) {
-        query["eventDateRange.startDate"] = {
-          $lte: filters?.endDate || new Date("9999-12-31"),
-        };
-        query["eventDateRange.endDate"] = {
-          $gte: filters?.startDate || new Date("0001-01-01"),
-        };
+        query["eventStartDateTime"] = {};
+        if (filters.startDate) {
+          query["eventStartDateTime"].$gte = filters.startDate;
+        }
+        if (filters.endDate) {
+          query["eventStartDateTime"].$lte = filters.endDate;
+        }
       }
 
       const total = await Lead.countDocuments(query);
@@ -104,12 +105,12 @@ export class LeadService {
       }
 
       if (filters?.startDate || filters?.endDate) {
-        query.occasionDate = {};
+        query["eventStartDateTime"] = {};
         if (filters.startDate) {
-          query.occasionDate.$gte = filters.startDate;
+          query["eventStartDateTime"].$gte = filters.startDate;
         }
         if (filters.endDate) {
-          query.occasionDate.$lte = filters.endDate;
+          query["eventStartDateTime"].$lte = filters.endDate;
         }
       }
 
@@ -229,7 +230,7 @@ export class LeadService {
   ): Promise<ILead[]> {
     try {
       const query: any = {
-        occasionDate: {
+        eventStartDateTime: {
           $gte: startDate,
           $lte: endDate,
         },
@@ -244,7 +245,7 @@ export class LeadService {
       }
 
       const leads = await Lead.find(query)
-        .sort({ occasionDate: 1 })
+        .sort({ eventStartDateTime: 1 })
         .populate("venueId", "venueName venueType");
 
       return leads;
@@ -270,7 +271,7 @@ export class LeadService {
       const hot = await Lead.countDocuments({ venueId, leadStatus: "hot" });
       const upcomingEvents = await Lead.countDocuments({
         venueId,
-        occasionDate: { $gte: new Date() },
+        eventStartDateTime: { $gte: new Date() },
       });
 
       return { total, cold, warm, hot, upcomingEvents };

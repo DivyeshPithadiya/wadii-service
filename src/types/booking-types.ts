@@ -11,7 +11,9 @@ export interface IBooking extends Document {
   occasionType: string;
   numberOfGuests: number;
   bookingStatus: "pending" | "confirmed" | "cancelled" | "completed";
-  timeSlot: TimeSlot;
+  eventStartDateTime: Date;
+  eventEndDateTime: Date;
+  slotType: "setup" | "event" | "cleanup" | "full_day";
   package?: {
     name: string;
     description?: string;
@@ -50,13 +52,6 @@ export interface IBooking extends Document {
   updatedAt: Date;
 }
 
-interface TimeSlot {
-  date: Date;
-  startTime: string; // Format: "HH:mm"
-  endTime: string; // Format: "HH:mm"
-  slotType?: "setup" | "event" | "cleanup" | "full_day";
-}
-
 // DTO for creating a new booking
 export interface CreateBookingDTO {
   venueId: Types.ObjectId;
@@ -67,7 +62,9 @@ export interface CreateBookingDTO {
   occasionType: string;
   numberOfGuests: number;
   bookingStatus?: "pending" | "confirmed" | "cancelled" | "completed";
-  timeSlot: TimeSlot;
+  eventStartDateTime: Date;
+  eventEndDateTime: Date;
+  slotType: "setup" | "event" | "cleanup" | "full_day";
   package?: {
     name: string;
     description?: string;
@@ -104,7 +101,9 @@ export interface UpdateBookingDTO {
   contactNo?: string;
   email?: string;
   occasionType?: string;
-  timeSlot?: TimeSlot;
+  eventStartDateTime?: Date;
+  eventEndDateTime?: Date;
+  slotType?: "setup" | "event" | "cleanup" | "full_day";
   numberOfGuests?: number;
   bookingStatus?: "pending" | "confirmed" | "cancelled" | "completed";
   package?: {

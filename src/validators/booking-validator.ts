@@ -1,27 +1,6 @@
 // validations/booking-validation.ts
 import { z } from "zod";
 
-/**
- * Time format validation regex (HH:mm)
- */
-const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-
-/**
- * Time slot schema
- */
-const timeSlotSchema = z.object({
-  date: z.coerce.date(),
-  startTime: z
-    .string()
-    .regex(timeRegex, "Start time must be in HH:mm format (e.g., 09:00)"),
-  endTime: z
-    .string()
-    .regex(timeRegex, "End time must be in HH:mm format (e.g., 17:00)"),
-  slotType: z
-    .enum(["setup", "event", "cleanup", "full_day"])
-    .default("event")
-    .optional(),
-});
 
 /**
  * Package schema
@@ -67,7 +46,9 @@ export const createBookingSchema = z
       .enum(["pending", "confirmed", "cancelled", "completed"])
       .default("pending")
       .optional(),
-    timeSlot: timeSlotSchema,
+    eventStartDateTime: z.coerce.date(),
+    eventEndDateTime: z.coerce.date(),
+    slotType: z.enum(["setup", "event", "cleanup", "full_day"]).default("event"),
     package: packageSchema.optional(),
     cateringServiceVendor: z
       .object({
@@ -94,7 +75,15 @@ export const createBookingSchema = z
   .refine((data) => data.payment.advanceAmount <= data.payment.totalAmount, {
     message: "Advance amount cannot exceed total amount",
     path: ["payment", "advanceAmount"],
-  });
+  })
+  .refine(
+    (data) =>
+      new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime),
+    {
+      message: "End datetime must be after start datetime",
+      path: ["eventEndDateTime"],
+    }
+  );
 
 /**
  * Update booking validation schema
@@ -110,7 +99,9 @@ export const updateBookingSchema = z
     bookingStatus: z
       .enum(["pending", "confirmed", "cancelled", "completed"])
       .optional(),
-    timeSlot: timeSlotSchema.optional(),
+    eventStartDateTime: z.coerce.date().optional(),
+    eventEndDateTime: z.coerce.date().optional(),
+    slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
     package: packageSchema.optional(),
     cateringServiceVendor: z
       .object({
@@ -170,7 +161,8 @@ export const bookingQuerySchema = z.object({
  * Check availability query schema
  */
 export const checkAvailabilitySchema = z.object({
-  date: z.string().min(1, "Date is required"),
+  eventStartDateTime: z.string().min(1, "Event start datetime is required"),
+  eventEndDateTime: z.string().min(1, "Event end datetime is required"),
   excludeBookingId: z.string().optional(),
 });
 

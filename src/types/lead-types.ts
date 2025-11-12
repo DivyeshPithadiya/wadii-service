@@ -9,7 +9,9 @@ export interface ILead extends Document {
   occasionType: string;
   numberOfGuests: number;
   leadStatus: "cold" | "warm" | "hot";
-  timeSlot: TimeSlot;
+  eventStartDateTime: Date;
+  eventEndDateTime: Date;
+  slotType: "setup" | "event" | "cleanup" | "full_day";
   package?: {
     name: string;
     description?: string;
@@ -38,13 +40,6 @@ export interface ILead extends Document {
   updatedAt: Date;
 }
 
-interface TimeSlot {
-  date: Date;
-  startTime: string; // Format: "HH:mm"
-  endTime: string; // Format: "HH:mm"
-  slotType?: "setup" | "event" | "cleanup" | "full_day";
-}
-
 // DTO for creating a new lead
 export interface CreateLeadDTO {
   venueId: Types.ObjectId;
@@ -54,7 +49,9 @@ export interface CreateLeadDTO {
   occasionType: string;
   numberOfGuests: number;
   leadStatus?: "cold" | "warm" | "hot";
-  timeSlot: TimeSlot;
+  eventStartDateTime: Date;
+  eventEndDateTime: Date;
+  slotType: "setup" | "event" | "cleanup" | "full_day";
   package?: {
     name: string;
     description?: string;
@@ -85,7 +82,9 @@ export interface UpdateLeadDTO {
   contactNo?: string;
   email?: string;
   occasionType?: string;
-  timeSlot?: TimeSlot;
+  eventStartDateTime?: Date;
+  eventEndDateTime?: Date;
+  slotType?: "setup" | "event" | "cleanup" | "full_day";
   numberOfGuests?: number;
   leadStatus?: "cold" | "warm" | "hot";
   package?: {
