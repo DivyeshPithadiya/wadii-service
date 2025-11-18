@@ -167,6 +167,11 @@ const bookingSchema = new Schema<IBooking>(
         enum: ["unpaid", "partially_paid", "paid"],
         default: "unpaid",
       },
+      paymentMode: {
+        type: String,
+        enum: ["cash", "card", "upi", "bank_transfer", "cheque", "other"],
+        required: true,
+      },
     },
     notes: {
       type: String,

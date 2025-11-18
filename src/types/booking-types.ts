@@ -39,6 +39,7 @@ export interface IBooking extends Document {
     totalAmount: number;
     advanceAmount: number;
     paymentStatus: "unpaid" | "partially_paid" | "paid";
+    paymentMode: "cash" | "card" | "upi" | "bank_transfer" | "cheque" | "other";
   };
   notes?: string;
   internalNotes?: string;
@@ -89,6 +90,7 @@ export interface CreateBookingDTO {
     totalAmount: number;
     advanceAmount: number;
     paymentStatus?: "unpaid" | "partially_paid" | "paid";
+    paymentMode: "cash" | "card" | "upi" | "bank_transfer" | "cheque" | "other";
   };
   notes?: string;
   internalNotes?: string;
@@ -130,6 +132,7 @@ export interface UpdateBookingDTO {
     totalAmount?: number;
     advanceAmount?: number;
     paymentStatus?: "unpaid" | "partially_paid" | "paid";
+    paymentMode?: "cash" | "card" | "upi" | "bank_transfer" | "cheque" | "other";
   };
   notes?: string;
   internalNotes?: string;

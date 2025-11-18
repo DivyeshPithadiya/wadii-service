@@ -48,7 +48,9 @@ export const createBookingSchema = z
       .optional(),
     eventStartDateTime: z.coerce.date(),
     eventEndDateTime: z.coerce.date(),
-    slotType: z.enum(["setup", "event", "cleanup", "full_day"]).default("event"),
+    slotType: z
+      .enum(["setup", "event", "cleanup", "full_day"])
+      .default("event"),
     package: packageSchema.optional(),
     cateringServiceVendor: z
       .object({
@@ -68,6 +70,9 @@ export const createBookingSchema = z
         .enum(["unpaid", "partially_paid", "paid"])
         .default("unpaid")
         .optional(),
+      paymentMode: z
+        .enum(["cash", "card", "upi", "bank_transfer", "cheque", "other"])
+        .default("cash"),
     }),
     notes: z.string().optional(),
     internalNotes: z.string().optional(),
@@ -122,6 +127,9 @@ export const updateBookingSchema = z
           .min(0, "Advance amount must be positive")
           .optional(),
         paymentStatus: z.enum(["unpaid", "partially_paid", "paid"]).optional(),
+        paymentMode: z
+          .enum(["cash", "card", "upi", "bank_transfer", "cheque", "other"])
+          .optional(),
       })
       .optional(),
     notes: z.string().optional(),
