@@ -7,100 +7,14 @@ export interface ILead extends Document {
   contactNo: string;
   email: string;
   occasionType: string;
-  eventDateRange: {
-    startDate: Date;
-    endDate: Date;
-  };
-  // occasionDate: Date;
   numberOfGuests: number;
   leadStatus: "cold" | "warm" | "hot";
-  package: {
-    name: string;
-    description: string;
-    price: number;
-    priceType: "flat" | "per_guest";
-  };
-  cateringServiceVendor: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  timeSlot: TimeSlot;
-  services?: Array<{
-    service: string;
-    vendor?: {
-      name: string;
-      email: string;
-      phone: string;
-    };
-  }>;
-  notes?: string;
-  createdBy?: Types.ObjectId;
-  updatedBy?: Types.ObjectId;
-  lastModifiedBy?: Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface TimeSlot {
-  date: Date;
-  startTime: string; // Format: "HH:mm"
-  endTime: string; // Format: "HH:mm"
-}
-
-// DTO for creating a new lead
-export interface CreateLeadDTO {
-  venueId: Types.ObjectId;
-  clientName: string;
-  contactNo: string;
-  email: string;
-  occasionType: string;
-  eventDateRange: {
-    startDate: Date;
-    endDate: Date;
-  };
-  numberOfGuests: number;
-  leadStatus?: "cold" | "warm" | "hot";
-  timeSlot: TimeSlot;
-  package: {
-    name: string;
-    description: string;
-    price: number;
-    priceType: "flat" | "per_guest";
-  };
-  cateringServiceVendor: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  services?: Array<{
-    service: string;
-    vendor?: {
-      name: string;
-      email: string;
-      phone: string;
-    };
-  }>;
-  notes?: string;
-  createdBy?: Types.ObjectId;
-}
-
-// DTO for updating a lead
-export interface UpdateLeadDTO {
-  clientName?: string;
-  contactN?: string;
-  email?: string;
-  occasionType?: string;
-  eventDateRange?: {
-    startDate: Date;
-    endDate: Date;
-  };
-  timeSlot?: TimeSlot;
-  numberOfGuests?: number;
-  leadStatus?: "cold" | "warm" | "hot";
+  eventStartDateTime: Date;
+  eventEndDateTime: Date;
+  slotType: "setup" | "event" | "cleanup" | "full_day";
   package?: {
     name: string;
-    description: string;
+    description?: string;
     price: number;
     priceType: "flat" | "per_guest";
   };
@@ -112,10 +26,86 @@ export interface UpdateLeadDTO {
   services?: Array<{
     service: string;
     vendor?: {
-      name: string;
-      email: string;
-      phone: string;
+      name?: string;
+      email?: string;
+      phone?: string;
     };
+    price: number;
+  }>;
+  notes?: string;
+  createdBy?: Types.ObjectId;
+  updatedBy?: Types.ObjectId;
+  lastModifiedBy?: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// DTO for creating a new lead
+export interface CreateLeadDTO {
+  venueId: Types.ObjectId;
+  clientName: string;
+  contactNo: string;
+  email: string;
+  occasionType: string;
+  numberOfGuests: number;
+  leadStatus?: "cold" | "warm" | "hot";
+  eventStartDateTime: Date;
+  eventEndDateTime: Date;
+  slotType: "setup" | "event" | "cleanup" | "full_day";
+  package?: {
+    name: string;
+    description?: string;
+    price: number;
+    priceType: "flat" | "per_guest";
+  };
+  cateringServiceVendor?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  services?: Array<{
+    service: string;
+    vendor?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+    };
+    price: number;
+  }>;
+  notes?: string;
+  createdBy?: Types.ObjectId;
+}
+
+// DTO for updating a lead
+export interface UpdateLeadDTO {
+  clientName?: string;
+  contactNo?: string;
+  email?: string;
+  occasionType?: string;
+  eventStartDateTime?: Date;
+  eventEndDateTime?: Date;
+  slotType?: "setup" | "event" | "cleanup" | "full_day";
+  numberOfGuests?: number;
+  leadStatus?: "cold" | "warm" | "hot";
+  package?: {
+    name: string;
+    description?: string;
+    price: number;
+    priceType: "flat" | "per_guest";
+  };
+  cateringServiceVendor?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  services?: Array<{
+    service: string;
+    vendor?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+    };
+    price: number;
   }>;
   notes?: string;
   updatedBy?: Types.ObjectId;

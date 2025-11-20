@@ -61,18 +61,18 @@ export class BookingService {
       }
 
       if (filters?.startDate || filters?.endDate) {
-        query["eventDateRange.startDate"] = {};
+        query["eventStartDateTime"] = {};
         if (filters.startDate) {
-          query["eventDateRange.startDate"].$gte = filters.startDate;
+          query["eventStartDateTime"].$gte = filters.startDate;
         }
         if (filters.endDate) {
-          query["eventDateRange.startDate"].$lte = filters.endDate;
+          query["eventStartDateTime"].$lte = filters.endDate;
         }
       }
 
       const total = await Booking.countDocuments(query);
       const bookings = await Booking.find(query)
-        .sort({ "eventDateRange.startDate": 1 })
+        .sort({ eventStartDateTime: 1 })
         .limit(filters?.limit || 50)
         .skip(filters?.skip || 0)
         .populate("venueId", "venueName venueType")
@@ -183,8 +183,8 @@ export class BookingService {
    */
   static async checkSlotAvailability(
     venueId: string,
-    startDate: Date,
-    endDate: Date,
+    eventStartDateTime: Date,
+    eventEndDateTime: Date,
     excludeBookingId?: string
   ): Promise<boolean> {
     try {
@@ -192,11 +192,22 @@ export class BookingService {
         venueId,
         bookingStatus: { $in: ["pending", "confirmed"] },
         $or: [
+          // New booking starts during an existing booking
           {
-            "eventDateRange.startDate": { $lte: endDate },
-            "eventDateRange.endDate": { $gte: startDate },
+            eventStartDateTime: { $lte: eventStartDateTime },
+            eventEndDateTime: { $gt: eventStartDateTime }
           },
-        ],
+          // New booking ends during an existing booking
+          {
+            eventStartDateTime: { $lt: eventEndDateTime },
+            eventEndDateTime: { $gte: eventEndDateTime }
+          },
+          // New booking completely encompasses an existing booking
+          {
+            eventStartDateTime: { $gte: eventStartDateTime },
+            eventEndDateTime: { $lte: eventEndDateTime }
+          }
+        ]
       };
 
       if (excludeBookingId) {
@@ -207,6 +218,18 @@ export class BookingService {
       return conflictingBookings === 0;
     } catch (error: any) {
       throw new Error(`Error checking slot availability: ${error.message}`);
+    }
+  }
+
+  /**
+   * Hard delete booking (permanent deletion)
+   */
+  static async deleteBooking(bookingId: string): Promise<IBooking | null> {
+    try {
+      const booking = await Booking.findByIdAndDelete(oid(bookingId));
+      return booking;
+    } catch (error: any) {
+      throw new Error(`Error deleting booking: ${error.message}`);
     }
   }
 }

@@ -13,7 +13,6 @@ const bookingSchema = new Schema<IBooking>(
       ref: "Lead",
       default: null,
     },
-
     clientName: {
       type: String,
       required: true,
@@ -30,8 +29,6 @@ const bookingSchema = new Schema<IBooking>(
       trim: true,
       lowercase: true,
     },
-
-    // Event Details
     occasionType: {
       type: String,
       required: true,
@@ -42,99 +39,118 @@ const bookingSchema = new Schema<IBooking>(
       required: true,
       min: 1,
     },
-
-    // Date Range & Timing
-    eventDateRange: {
-      startDate: {
-        type: Date,
-        required: true,
-      },
-      endDate: {
-        type: Date,
-        required: true,
-      },
-    },
-    timeSlots: {
-      date: {
-        type: Date,
-        required: true,
-      },
-      startTime: {
-        type: String, // Format: "HH:mm" (e.g., "09:00")
-        required: true,
-        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-      },
-      endTime: {
-        type: String, // Format: "HH:mm" (e.g., "17:00")
-        required: true,
-        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-      },
-      slotType: {
-        type: String,
-        enum: ["setup", "event", "cleanup", "full_day"],
-        default: "event",
-      },
-    },
-    // Booking Status
     bookingStatus: {
       type: String,
       enum: ["pending", "confirmed", "cancelled", "completed"],
       default: "pending",
     },
-
-    // Package Details (from Lead)
     package: {
-      name: {
-        type: String,
-        required: true,
-        trim: true,
+      type: {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        description: {
+          type: String,
+          required: false,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        priceType: {
+          type: String,
+          enum: ["flat", "per_guest"],
+          required: true,
+        },
       },
-      description: {
-        type: String,
-        required: true,
-      },
-      price: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
-      priceType: {
-        type: String,
-        enum: ["flat", "per_guest"],
-        required: true,
-      },
+      required: false,
     },
-
-    // Services
+    cateringServiceVendor: {
+      type: {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        email: {
+          type: String,
+          required: true,
+          trim: true,
+          lowercase: true,
+        },
+        phone: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+      },
+      required: false,
+    },
     services: [
       {
         service: {
           type: String,
           required: true,
           trim: true,
-          vendors: {
+        },
+        vendor: {
+          type: {
             name: {
               type: String,
-              required: true,
+              required: false,
               trim: true,
             },
             email: {
               type: String,
-              required: true,
+              required: false,
               trim: true,
               lowercase: true,
             },
             phone: {
               type: String,
-              required: true,
+              required: false,
               trim: true,
             },
           },
+          required: false,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+          default: 0,
         },
       },
     ],
-
-    // Payment Details
+    // DateTime Range (Updated Structure)
+    eventStartDateTime: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    eventEndDateTime: {
+      type: Date,
+      required: true,
+      validate: {
+        validator: function (this: any, value: Date): boolean {
+          // Skip validation if eventStartDateTime is not set (during partial updates)
+          if (!this.eventStartDateTime) {
+            return true;
+          }
+          return value > this.eventStartDateTime;
+        },
+        message: "End datetime must be after start datetime",
+      },
+    },
+    slotType: {
+      type: String,
+      enum: ["setup", "event", "cleanup", "full_day"],
+      default: "event",
+    },
+    // Payment Details (Booking-specific)
     payment: {
       totalAmount: {
         type: Number,
@@ -146,15 +162,17 @@ const bookingSchema = new Schema<IBooking>(
         default: 0,
         min: 0,
       },
-
       paymentStatus: {
         type: String,
         enum: ["unpaid", "partially_paid", "paid"],
         default: "unpaid",
       },
+      paymentMode: {
+        type: String,
+        enum: ["cash", "card", "upi", "bank_transfer", "cheque", "other"],
+        required: true,
+      },
     },
-
-    // Notes
     notes: {
       type: String,
       default: "",
@@ -163,8 +181,7 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       default: "",
     },
-
-    // Tracking
+    // Tracking (Booking-specific)
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -189,23 +206,28 @@ const bookingSchema = new Schema<IBooking>(
   }
 );
 
+// Indexes
 bookingSchema.index({ venueId: 1 });
 bookingSchema.index({ leadId: 1 });
 bookingSchema.index({ bookingStatus: 1 });
-bookingSchema.index({ "eventDateRange.startDate": 1 });
-bookingSchema.index({ "eventDateRange.endDate": 1 });
 bookingSchema.index({ createdAt: -1 });
 bookingSchema.index({ email: 1 });
 bookingSchema.index({ contactNo: 1 });
+bookingSchema.index({ eventStartDateTime: 1 });
+bookingSchema.index({ eventEndDateTime: 1 });
 bookingSchema.index({ "payment.paymentStatus": 1 });
 
+// Compound indexes for common queries
 bookingSchema.index({ venueId: 1, bookingStatus: 1 });
-bookingSchema.index({ venueId: 1, "eventDateRange.startDate": 1 });
+bookingSchema.index({ venueId: 1, eventStartDateTime: 1 });
 bookingSchema.index({ venueId: 1, "payment.paymentStatus": 1 });
 
+// Pre-save hook for payment status
 bookingSchema.pre("save", function (next) {
   if (this.payment) {
-    if (this.payment.advanceAmount > 0) {
+    if (this.payment.advanceAmount >= this.payment.totalAmount) {
+      this.payment.paymentStatus = "paid";
+    } else if (this.payment.advanceAmount > 0) {
       this.payment.paymentStatus = "partially_paid";
     } else {
       this.payment.paymentStatus = "unpaid";

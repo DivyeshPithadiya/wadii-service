@@ -11,23 +11,8 @@ const leadRoutes = Router();
 
 // All lead routes require authentication + role resolution
 leadRoutes.use(authMiddleware, rolesMiddleware);
-const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
 
 // ----- Validation Schemas -----
-
-const timeSlotSchema = z.object({
-  date: z.coerce.date(),
-  startTime: z
-    .string()
-    .regex(timeRegex, "Start time must be in HH:mm format (e.g., 09:00)"),
-  endTime: z
-    .string()
-    .regex(timeRegex, "End time must be in HH:mm format (e.g., 17:00)"),
-  slotType: z
-    .enum(["setup", "event", "cleanup", "full_day", "selected_days"])
-    .default("event")
-    .optional(),
-});
 
 /**
  * Package schema
@@ -43,13 +28,16 @@ const packageSchema = z.object({
 /**
  * Service schema
  */
-export const serviceSchema = z.object({
-  service: z.string(),
-  vendor: z.object({
-    name: z.string(),
-    email: z.string().email().optional(),
-    phone: z.string().optional(),
-  }),
+const serviceSchema = z.object({
+  service: z.string().trim().min(1, "Service ID is required"),
+  vendor: z
+    .object({
+      name: z.string().optional(),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+    })
+    .optional(),
+  price: z.number().min(0, "Price must be positive").default(0),
 });
 
 const eventDateRangeSchema = z
@@ -78,40 +66,12 @@ const createLeadSchema = z.object({
   email: z.string().email("Invalid email format"),
   occasionType: z.string().min(1, "Occasion type is required"),
   numberOfGuests: z.number().min(1, "Number of guests must be at least 1"),
-  leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
-  package: packageSchema,
-  services: z.array(serviceSchema)
-    .refine(
-      (arr) => new Set(arr.map((s) => s.service)).size === arr.length,
-      "Only one vendor per service is allowed"
-    )
-    .optional(),
-  notes: z.string().optional(),
-  cateringServiceVendor: z
-    .object({
-      name: z.string(),
-      email: z.string().email(),
-      phone: z.string(),
-    }),
-  eventDateRange: eventDateRangeSchema.optional(),
-  timeSlot: timeSlotSchema,
-});
-
-const updateLeadSchema = z.object({
-  venueId: objectId.optional(),
-  clientName: z.string().min(1).optional(),
-  contactNo: z.string().min(1).optional(),
-  email: z.string().email().optional(),
-  occasionType: z.string().min(1).optional(),
-  numberOfGuests: z.number().min(1).optional(),
-  leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
+  leadStatus: z.enum(["cold", "warm", "hot"]).default("cold"),
+  eventStartDateTime: z.coerce.date(),
+  eventEndDateTime: z.coerce.date(),
+  slotType: z.enum(["setup", "event", "cleanup", "full_day"]).default("event"),
   package: packageSchema.optional(),
-  services: z.array(serviceSchema)
-    .refine(
-      (arr) => new Set(arr.map((s) => s.service)).size === arr.length,
-      "Only one vendor per service is allowed"
-    )
-    .optional(),
+  services: z.array(serviceSchema).optional(),
   notes: z.string().optional(),
   cateringServiceVendor: z
     .object({
@@ -120,9 +80,37 @@ const updateLeadSchema = z.object({
       phone: z.string(),
     })
     .optional(),
-  eventDateRange: eventDateRangeSchema.optional(),
-  timeSlot: timeSlotSchema.optional(),
-});
+}).refine(
+  (data) => new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime),
+  {
+    message: "End datetime must be after start datetime",
+    path: ["eventEndDateTime"],
+  }
+);
+
+const updateLeadSchema = z
+  .object({
+    clientName: z.string().min(1).optional(),
+    contactNo: z.string().min(1).optional(),
+    email: z.string().email().optional(),
+    occasionType: z.string().min(1).optional(),
+    numberOfGuests: z.number().min(1).optional(),
+    leadStatus: z.enum(["cold", "warm", "hot"]).optional(),
+    eventStartDateTime: z.coerce.date().optional(),
+    eventEndDateTime: z.coerce.date().optional(),
+    slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
+    package: packageSchema.optional(),
+    services: z.array(serviceSchema).optional(),
+    cateringServiceVendor: z
+      .object({
+        name: z.string(),
+        email: z.string().email(),
+        phone: z.string(),
+      })
+      .optional(),
+    notes: z.string().optional(),
+  })
+  .optional();
 
 const updateLeadStatusSchema = z.object({
   status: z.enum(["cold", "warm", "hot"]),

@@ -29,21 +29,6 @@ const leadSchema = new Schema<ILead>(
       required: true,
       trim: true,
     },
-    // Date Range & Timing
-    eventDateRange: {
-      startDate: {
-        type: Date,
-        required: false,
-      },
-      endDate: {
-        type: Date,
-        required: false,
-      },
-    },
-    // occasionDate: {
-    //   type: Date,
-    //   required: true,
-    // },
     numberOfGuests: {
       type: Number,
       required: true,
@@ -55,43 +40,49 @@ const leadSchema = new Schema<ILead>(
       default: "cold",
     },
     package: {
-      name: {
-        type: String,
-        required: true,
-        trim: true,
+      type: {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        description: {
+          type: String,
+          required: false,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        priceType: {
+          type: String,
+          enum: ["flat", "per_guest"],
+          required: true,
+        },
       },
-      description: {
-        type: String,
-        required: false,
-      },
-      price: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
-      priceType: {
-        type: String,
-        enum: ["flat", "per_guest"],
-        required: true,
-      },
+      required: false,
     },
     cateringServiceVendor: {
-      name: {
-        type: String,
-        required: true,
-        trim: true,
+      type: {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        email: {
+          type: String,
+          required: true,
+          trim: true,
+          lowercase: true,
+        },
+        phone: {
+          type: String,
+          required: true,
+          trim: true,
+        },
       },
-      email: {
-        type: String,
-        required: true,
-        trim: true,
-        lowercase: true,
-      },
-      phone: {
-        type: String,
-        required: true,
-        trim: true,
-      },
+      required: false,
     },
     services: [
       {
@@ -101,45 +92,58 @@ const leadSchema = new Schema<ILead>(
           trim: true,
         },
         vendor: {
-          name: {
-            type: String,
-            required: false,
-            trim: true,
+          type: {
+            name: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            email: {
+              type: String,
+              required: false,
+              trim: true,
+              lowercase: true,
+            },
+            phone: {
+              type: String,
+              required: false,
+              trim: true,
+            },
           },
-          email: {
-            type: String,
-            required: false,
-            trim: true,
-            lowercase: true,
-          },
-          phone: {
-            type: String,
-            required: false,
-            trim: true,
-          },
+          required: false,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+          default: 0,
         },
       },
     ],
-    timeSlot: {
-      date: {
-        type: Date,
-        required: true,
+    // DateTime Range (Updated Structure)
+    eventStartDateTime: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    eventEndDateTime: {
+      type: Date,
+      required: true,
+      validate: {
+        validator: function (this: any, value: Date): boolean {
+          // Skip validation if eventStartDateTime is not set (during partial updates)
+          if (!this.eventStartDateTime) {
+            return true;
+          }
+          return value > this.eventStartDateTime;
+        },
+        message: "End datetime must be after start datetime",
       },
-      startTime: {
-        type: String, // Format: "HH:mm" (e.g., "09:00")
-        required: true,
-        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-      },
-      endTime: {
-        type: String, // Format: "HH:mm" (e.g., "17:00")
-        required: true,
-        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-      },
-      slotType: {
-        type: String,
-        enum: ["setup", "event", "cleanup", "full_day","selected_days"],
-        default: "event",
-      },
+    },
+    slotType: {
+      type: String,
+      enum: ["setup", "event", "cleanup", "full_day"],
+      default: "event",
     },
     notes: {
       type: String,
@@ -159,15 +163,15 @@ const leadSchema = new Schema<ILead>(
 
 // Indexes
 leadSchema.index({ venueId: 1 });
-
 leadSchema.index({ leadStatus: 1 });
-leadSchema.index({ occasionDate: 1 });
 leadSchema.index({ createdAt: -1 });
 leadSchema.index({ email: 1 });
 leadSchema.index({ contactNo: 1 });
+leadSchema.index({ eventStartDateTime: 1 });
+leadSchema.index({ eventEndDateTime: 1 });
 
 // Compound indexes for common queries
 leadSchema.index({ venueId: 1, leadStatus: 1 });
-leadSchema.index({ venueId: 1, occasionDate: 1 });
+leadSchema.index({ venueId: 1, eventStartDateTime: 1 });
 
 export const Lead = mongoose.model<ILead>("Lead", leadSchema);

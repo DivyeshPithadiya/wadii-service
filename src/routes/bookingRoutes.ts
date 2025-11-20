@@ -34,11 +34,11 @@ bookingRoutes.post(
 
 /**
  * Get booking by ID
- * GET /api/bookings/:bookingId
+ * GET /api/bookings/:venueId/booking/:bookingId
  * Required: booking.read permission
  */
 bookingRoutes.get(
-  "/:bookingId",
+  "/:venueId/booking/:bookingId",
   requirePerm(ROLE_PERMS.BOOKING_READ),
   BookingController.getBookingById
 );
@@ -57,11 +57,11 @@ bookingRoutes.get(
 
 /**
  * Update booking
- * PUT /api/bookings/:bookingId
+ * PUT /api/bookings/:venueId/booking/:bookingId
  * Required: booking.update permission
  */
 bookingRoutes.put(
-  "/:bookingId",
+  "/:venueId/booking/:bookingId",
   validate("body", updateBookingSchema),
   requirePerm(ROLE_PERMS.BOOKING_UPDATE),
   BookingController.updateBooking
@@ -69,11 +69,11 @@ bookingRoutes.put(
 
 /**
  * Cancel booking (soft delete)
- * POST /api/bookings/:bookingId/cancel
+ * POST /api/bookings/:venueId/booking/:bookingId/cancel
  * Required: booking.delete permission
  */
 bookingRoutes.post(
-  "/:bookingId/cancel",
+  "/:venueId/booking/:bookingId/cancel",
   validate("body", cancelBookingSchema),
   requirePerm(ROLE_PERMS.BOOKING_DELETE),
   BookingController.cancelBooking
@@ -81,22 +81,22 @@ bookingRoutes.post(
 
 /**
  * Confirm booking
- * POST /api/bookings/:bookingId/confirm
+ * POST /api/bookings/:venueId/booking/:bookingId/confirm
  * Required: booking.update permission
  */
 bookingRoutes.post(
-  "/:bookingId/confirm",
+  "/:venueId/booking/:bookingId/confirm",
   requirePerm(ROLE_PERMS.BOOKING_UPDATE),
   BookingController.confirmBooking
 );
 
 /**
  * Update payment
- * PATCH /api/bookings/:bookingId/payment
+ * PATCH /api/bookings/:venueId/booking/:bookingId/payment
  * Required: booking.update permission
  */
 bookingRoutes.patch(
-  "/:bookingId/payment",
+  "/:venueId/booking/:bookingId/payment",
   validate("body", updatePaymentSchema),
   requirePerm(ROLE_PERMS.BOOKING_UPDATE),
   BookingController.updatePayment
@@ -112,6 +112,17 @@ bookingRoutes.get(
   validate("query", checkAvailabilitySchema),
   requirePerm(ROLE_PERMS.BOOKING_READ),
   BookingController.checkAvailability
+);
+
+/**
+ * Delete booking (hard delete)
+ * DELETE /api/bookings/:venueId/booking/:bookingId
+ * Required: booking.delete permission
+ */
+bookingRoutes.delete(
+  "/:venueId/booking/:bookingId",
+  requirePerm(ROLE_PERMS.BOOKING_DELETE),
+  BookingController.deleteBooking
 );
 
 export default bookingRoutes;

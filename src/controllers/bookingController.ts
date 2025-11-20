@@ -10,6 +10,7 @@ import {
   ConfirmBookingReq,
   UpdatePaymentReq,
   CheckAvailabilityReq,
+  DeleteBookingReq,
   BookingQueryFilters,
 } from "../types/booking-request-types";
 import { parseNumberParam } from "../utils/helper";
@@ -30,21 +31,17 @@ export class BookingController {
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
-      if (
-  !req.body.eventDateRange ||
-  !req.body.eventDateRange.startDate ||
-  !req.body.eventDateRange.endDate
-) {
-  res.status(400).json({ success: false, message: "Invalid event date range" });
-  return;
-}
-
-const isAvailable = await BookingService.checkSlotAvailability(
-  req.body.venueId,
-  new Date(req.body.eventDateRange.startDate),
-  new Date(req.body.eventDateRange.endDate)
-);
       // Check slot availability before creating
+      if (!req.body.eventStartDateTime || !req.body.eventEndDateTime) {
+        res.status(400).json({ success: false, message: "Invalid datetime range" });
+        return;
+      }
+
+      const isAvailable = await BookingService.checkSlotAvailability(
+        req.body.venueId,
+        new Date(req.body.eventStartDateTime),
+        new Date(req.body.eventEndDateTime)
+      );
 
       if (!isAvailable) {
         res.status(409).json({
@@ -108,16 +105,16 @@ const isAvailable = await BookingService.checkSlotAvailability(
   ): Promise<void> {
     try {
       const { venueId } = req.params;
-     const filters: BookingQueryFilters = {
-       bookingStatus: req.query.bookingStatus as any,
-       paymentStatus: req.query.paymentStatus as any,
-       startDate: req.query.startDate
-         ? new Date(req.query.startDate)
-         : undefined,
-       endDate: req.query.endDate ? new Date(req.query.endDate) : undefined,
-       limit: req.query.limit ? parseNumberParam(req.query.limit, 10) : 10,
-       skip: req.query.skip ? parseNumberParam(req.query.skip, 0) : 0,
-     };
+      const filters: BookingQueryFilters = {
+        bookingStatus: req.query.bookingStatus as any,
+        paymentStatus: req.query.paymentStatus as any,
+        startDate: req.query.startDate
+          ? new Date(req.query.startDate)
+          : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate) : undefined,
+        limit: req.query.limit ? parseNumberParam(req.query.limit, 10) : 10,
+        skip: req.query.skip ? parseNumberParam(req.query.skip, 0) : 0,
+      };
 
       const result = await BookingService.getBookingsByVenue(venueId, filters);
 
@@ -143,30 +140,55 @@ const isAvailable = await BookingService.checkSlotAvailability(
     res: Response
   ): Promise<void> {
     try {
+      console.log("---- UPDATE BOOKING REQUEST RECEIVED ----");
+      console.log("User:", req.user);
+      console.log("Params:", req.params);
+      console.log("Body:", req.body);
+
       if (!req.user?.userId) {
+        console.log("Unauthorized request: Missing userId");
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
 
       const { bookingId } = req.params;
 
-     if (!req.body.venueId) {
-       res
-         .status(400)
-         .json({ success: false, message: "Venue ID is required" });
-       return;
-     }
+      console.log("Booking ID:", bookingId);
 
-      // If updating date range, check availability
-      if (req.body.eventDateRange) {
+      // If updating time slot, check availability
+      if (req.body.eventStartDateTime || req.body.eventEndDateTime) {
+        console.log("DateTime update detected. Checking availability…");
+
+        const currentBooking = await BookingService.getBookingById(bookingId);
+        console.log("Current Booking:", currentBooking);
+
+        if (!currentBooking) {
+          console.log("❌ Booking not found");
+          res
+            .status(404)
+            .json({ success: false, message: "Booking not found" });
+          return;
+        }
+
+        // Use existing values if not provided in update
+        const startDateTime = req.body.eventStartDateTime
+          ? new Date(req.body.eventStartDateTime)
+          : currentBooking.eventStartDateTime;
+        const endDateTime = req.body.eventEndDateTime
+          ? new Date(req.body.eventEndDateTime)
+          : currentBooking.eventEndDateTime;
+
         const isAvailable = await BookingService.checkSlotAvailability(
-          req.body.venueId,
-          new Date(req.body.eventDateRange.startDate),
-          new Date(req.body.eventDateRange.endDate),
+          (currentBooking.venueId as any)._id?.toString() || currentBooking.venueId.toString(),
+          startDateTime,
+          endDateTime,
           bookingId
         );
 
+        console.log("Slot Available:", isAvailable);
+
         if (!isAvailable) {
+          console.log("❌ Time slot unavailable");
           res.status(409).json({
             success: false,
             message: "Time slot is not available for this venue",
@@ -175,17 +197,29 @@ const isAvailable = await BookingService.checkSlotAvailability(
         }
       }
 
-      const updateData = {
+      const updateData: any = {
         ...req.body,
         updatedBy: oid(req.user.userId),
       };
 
+      // Convert venueId to ObjectId if provided
+      if (req.body.venueId) {
+        updateData.venueId = oid(req.body.venueId);
+      }
+
+      console.log("Final Update Data:", updateData);
+
       const booking = await BookingService.updateBooking(bookingId, updateData);
 
+      console.log("Update Result:", booking);
+
       if (!booking) {
+        console.log("❌ Booking not found on update");
         res.status(404).json({ success: false, message: "Booking not found" });
         return;
       }
+
+      console.log("✅ Booking updated successfully");
 
       res.status(200).json({
         success: true,
@@ -193,6 +227,7 @@ const isAvailable = await BookingService.checkSlotAvailability(
         data: booking,
       });
     } catch (error: any) {
+      console.error("❌ Error in updateBooking:", error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -323,26 +358,58 @@ const isAvailable = await BookingService.checkSlotAvailability(
   ): Promise<void> {
     try {
       const { venueId } = req.params;
-      const { startDate, endDate, excludeBookingId } = req.query;
+      const { eventStartDateTime, eventEndDateTime, excludeBookingId } = req.query;
 
-      if (!startDate || !endDate) {
+      if (!eventStartDateTime || !eventEndDateTime) {
         res.status(400).json({
           success: false,
-          message: "Start date and end date are required",
+          message: "Event start and end datetime are required",
         });
         return;
       }
 
       const isAvailable = await BookingService.checkSlotAvailability(
         venueId,
-        new Date(startDate),
-        new Date(endDate),
-        excludeBookingId
+        new Date(eventStartDateTime as string),
+        new Date(eventEndDateTime as string),
+        excludeBookingId as string
       );
 
       res.status(200).json({
         success: true,
         data: { available: isAvailable },
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Delete booking (hard delete)
+   */
+  static async deleteBooking(
+    req: DeleteBookingReq,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { bookingId } = req.params;
+
+      const booking = await BookingService.deleteBooking(bookingId);
+
+      if (!booking) {
+        res.status(404).json({ success: false, message: "Booking not found" });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Booking deleted successfully",
+        data: booking,
       });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });
