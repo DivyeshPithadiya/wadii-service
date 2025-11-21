@@ -196,8 +196,6 @@ venueRoutes.post(
 // Remove food package - needs venue.update
 venueRoutes.delete(
   "/:venueId/packages/:packageId",
-  validate("params", packageParam),
-  // validate("body", deletePackageSchema),
   requirePerm(ROLE_PERMS.VENUE_UPDATE),
   VenueController.removeFoodPackage
 );
