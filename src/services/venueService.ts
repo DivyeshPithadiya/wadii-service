@@ -599,11 +599,11 @@ export class VenueService {
   }
 
   /**
-   * Remove a food package by name
+   * Remove a food package by ID
    */
   static async removeFoodPackage(
     venueId: string,
-    packageName: string,
+    packageId: string,
     updatedBy: string,
     userId: string,
     userRole?: RoleSnapshot
@@ -625,7 +625,7 @@ export class VenueService {
     }
 
     const packageIndex = venue.foodPackages?.findIndex(
-      (p) => p.name === packageName
+      (p: any) => p._id.toString() === packageId
     );
     if (packageIndex === -1 || packageIndex === undefined) {
       throw new Error("Food package not found");

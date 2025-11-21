@@ -447,7 +447,7 @@ export class VenueController {
 
   /**
    * Remove a food package
-   * DELETE /venues/:venueId/packages
+   * DELETE /venues/:venueId/packages/:packageId
    */
   static async removeFoodPackage(
     req: Request<Params, any, any, Query>,
@@ -459,20 +459,19 @@ export class VenueController {
         return;
       }
 
-      const { venueId } = req.params;
-      const { packageName } = req.body;
+      const { venueId, packageId } = req.params;
 
-      if (!venueId || !packageName) {
+      if (!venueId || !packageId) {
         res.status(400).json({
           success: false,
-          message: "venueId and packageName are required",
+          message: "venueId and packageId are required",
         });
         return;
       }
 
       const venue = await VenueService.removeFoodPackage(
         venueId,
-        packageName,
+        packageId,
         req.user.userId,
         req.user.userId,
         req.userRole as RoleSnapshot | undefined
