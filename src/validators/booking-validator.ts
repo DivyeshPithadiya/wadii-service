@@ -95,7 +95,6 @@ export const createBookingSchema = z
  */
 export const updateBookingSchema = z
   .object({
-    venueId: z.string().optional(),
     clientName: z.string().trim().min(1).optional(),
     contactNo: z.string().trim().min(1).optional(),
     email: z.string().trim().toLowerCase().email().optional(),
@@ -135,7 +134,31 @@ export const updateBookingSchema = z
     notes: z.string().optional(),
     internalNotes: z.string().optional(),
   })
-  .partial();
+  .partial()
+  .refine(
+    (data) => {
+      if (data.payment?.advanceAmount !== undefined && data.payment?.totalAmount !== undefined) {
+        return data.payment.advanceAmount <= data.payment.totalAmount;
+      }
+      return true;
+    },
+    {
+      message: "Advance amount cannot exceed total amount",
+      path: ["payment", "advanceAmount"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.eventStartDateTime && data.eventEndDateTime) {
+        return new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime);
+      }
+      return true;
+    },
+    {
+      message: "End datetime must be after start datetime",
+      path: ["eventEndDateTime"],
+    }
+  );
 
 /**
  * Cancel booking validation schema

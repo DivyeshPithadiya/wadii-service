@@ -45,9 +45,7 @@ export interface UpdateBookingReq extends Request {
   params: {
     bookingId: string;
   };
-  body: Partial<IBooking> & {
-    venueId?: string;
-  };
+  body: Partial<IBooking>;
   user?: {
     userId: string;
   };

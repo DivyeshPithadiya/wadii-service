@@ -1,6 +1,5 @@
 import { Lead } from "../models/Lead";
 import { ILead } from "../types/lead-types";
-import mongoose, { Types } from "mongoose";
 import { oid } from "../utils/helper";
 
 
@@ -15,6 +14,14 @@ export class LeadService {
     try {
       const lead = new Lead(leadData);
       await lead.save();
+
+      // Populate and return
+      await lead.populate([
+        { path: "venueId", select: "venueName venueType address" },
+        { path: "createdBy", select: "_id email firstName lastName" },
+        { path: "updatedBy", select: "_id email firstName lastName" }
+      ]);
+
       return lead;
     } catch (error:any) {
       throw new Error(`Error creating lead: ${error.message}`);
@@ -28,6 +35,8 @@ export class LeadService {
     try {
       const lead = await Lead.findById(oid(leadId))
         .populate("venueId", "venueName venueType address")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
       return lead;
     } catch (error:any) {
       throw new Error(`Error fetching lead: ${error.message}`);
@@ -70,8 +79,8 @@ export class LeadService {
         .limit(filters?.limit || 50)
         .skip(filters?.skip || 0)
         .populate("venueId", "venueName venueType")
-        .populate("updatedBy", "firstName lastName")
-        .populate("createdBy", "firstName lastName email");
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
 
       return { leads, total };
     } catch (error:any) {
@@ -119,7 +128,9 @@ export class LeadService {
         .sort({ createdAt: -1 })
         .limit(filters?.limit || 50)
         .skip(filters?.skip || 0)
-        .populate("venueId", "venueName venueType");
+        .populate("venueId", "venueName venueType")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
 
       return { leads, total };
     } catch (error:any) {
@@ -142,7 +153,8 @@ export class LeadService {
         { new: true, runValidators: true }
       )
         .populate("venueId", "venueName venueType")
-        .populate("updatedBy", "firstName lastName");
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
 
       return lead;
     } catch (error:any) {
@@ -163,7 +175,10 @@ export class LeadService {
         leadId,
         { leadStatus: status, updatedBy, updatedAt: new Date() },
         { new: true, runValidators: true }
-      );
+      )
+        .populate("venueId", "venueName venueType")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
 
       return lead;
     } catch (error:any) {
@@ -211,7 +226,9 @@ export class LeadService {
       const leads = await Lead.find(query)
         .sort({ createdAt: -1 })
         .limit(20)
-        .populate("venueId", "venueName venueType");
+        .populate("venueId", "venueName venueType")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
 
       return leads;
     } catch (error:any) {
@@ -246,7 +263,9 @@ export class LeadService {
 
       const leads = await Lead.find(query)
         .sort({ eventStartDateTime: 1 })
-        .populate("venueId", "venueName venueType");
+        .populate("venueId", "venueName venueType")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
 
       return leads;
     } catch (error:any) {

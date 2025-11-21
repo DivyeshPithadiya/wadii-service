@@ -202,11 +202,6 @@ export class BookingController {
         updatedBy: oid(req.user.userId),
       };
 
-      // Convert venueId to ObjectId if provided
-      if (req.body.venueId) {
-        updateData.venueId = oid(req.body.venueId);
-      }
-
       console.log("Final Update Data:", updateData);
 
       const booking = await BookingService.updateBooking(bookingId, updateData);

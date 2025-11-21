@@ -149,8 +149,16 @@ export interface BusinessLeadStatsResponse extends LeadStatsResponse {
   }>;
 }
 
+// User info for populated fields
+export interface IUserInfo {
+  _id: Types.ObjectId;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
 // Lead with populated fields
-export interface ILeadPopulated extends Omit<ILead, "venueId" | "businessId"> {
+export interface ILeadPopulated extends Omit<ILead, "venueId" | "businessId" | "createdBy" | "updatedBy"> {
   venueId: {
     _id: Types.ObjectId;
     venueName: string;
@@ -167,4 +175,6 @@ export interface ILeadPopulated extends Omit<ILead, "venueId" | "businessId"> {
     _id: Types.ObjectId;
     businessName: string;
   };
+  createdBy?: IUserInfo;
+  updatedBy?: IUserInfo;
 }

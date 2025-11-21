@@ -183,8 +183,16 @@ export interface BusinessBookingStatsResponse extends BookingStatsResponse {
   }>;
 }
 
+// User info for populated fields
+export interface IUserInfo {
+  _id: Types.ObjectId;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
 // Booking with populated fields
-export interface IBookingPopulated extends Omit<IBooking, "venueId" | "leadId"> {
+export interface IBookingPopulated extends Omit<IBooking, "venueId" | "leadId" | "createdBy" | "updatedBy"> {
   venueId: {
     _id: Types.ObjectId;
     venueName: string;
@@ -202,4 +210,6 @@ export interface IBookingPopulated extends Omit<IBooking, "venueId" | "leadId"> 
     clientName: string;
     leadStatus: string;
   };
+  createdBy?: IUserInfo;
+  updatedBy?: IUserInfo;
 }

@@ -12,6 +12,15 @@ export class BookingService {
     try {
       const booking = new Booking(bookingData);
       await booking.save();
+
+      // Populate and return
+      await booking.populate([
+        { path: "venueId", select: "venueName venueType address" },
+        { path: "leadId", select: "clientName contactNo email leadStatus" },
+        { path: "createdBy", select: "_id email firstName lastName" },
+        { path: "updatedBy", select: "_id email firstName lastName" }
+      ]);
+
       return booking;
     } catch (error: any) {
       throw new Error(`Error creating booking: ${error.message}`);
@@ -25,7 +34,9 @@ export class BookingService {
     try {
       const booking = await Booking.findById(oid(bookingId))
         .populate("venueId", "venueName venueType address")
-        .populate("leadId", "clientName contactNo email leadStatus");
+        .populate("leadId", "clientName contactNo email leadStatus")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
       return booking;
     } catch (error: any) {
       throw new Error(`Error fetching booking: ${error.message}`);
@@ -76,7 +87,9 @@ export class BookingService {
         .limit(filters?.limit || 50)
         .skip(filters?.skip || 0)
         .populate("venueId", "venueName venueType")
-        .populate("leadId", "clientName email");
+        .populate("leadId", "clientName email")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
 
       return { bookings, total };
     } catch (error: any) {
@@ -99,7 +112,11 @@ export class BookingService {
           updatedAt: new Date(),
         },
         { new: true, runValidators: true }
-      );
+      )
+        .populate("venueId", "venueName venueType address")
+        .populate("leadId", "clientName contactNo email leadStatus")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
       return booking;
     } catch (error: any) {
       throw new Error(`Error updating booking: ${error.message}`);
@@ -124,7 +141,11 @@ export class BookingService {
           updatedBy: userId,
         },
         { new: true }
-      );
+      )
+        .populate("venueId", "venueName venueType address")
+        .populate("leadId", "clientName contactNo email leadStatus")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
       return booking;
     } catch (error: any) {
       throw new Error(`Error cancelling booking: ${error.message}`);
@@ -147,7 +168,11 @@ export class BookingService {
           updatedBy: userId,
         },
         { new: true }
-      );
+      )
+        .populate("venueId", "venueName venueType address")
+        .populate("leadId", "clientName contactNo email leadStatus")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
       return booking;
     } catch (error: any) {
       throw new Error(`Error confirming booking: ${error.message}`);
@@ -171,6 +196,14 @@ export class BookingService {
       booking.payment.advanceAmount = advanceAmount;
       booking.updatedBy = userId as any;
       await booking.save(); // Triggers pre-save hook for payment calculation
+
+      // Populate and return
+      await booking.populate([
+        { path: "venueId", select: "venueName venueType address" },
+        { path: "leadId", select: "clientName contactNo email leadStatus" },
+        { path: "createdBy", select: "_id email firstName lastName" },
+        { path: "updatedBy", select: "_id email firstName lastName" }
+      ]);
 
       return booking;
     } catch (error: any) {
