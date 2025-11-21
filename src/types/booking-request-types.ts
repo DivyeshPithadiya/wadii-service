@@ -91,7 +91,8 @@ export interface CheckAvailabilityReq extends Request {
     venueId: string;
   };
   query: {
-    date: string;
+    eventStartDateTime: string;
+    eventEndDateTime: string;
     excludeBookingId?: string;
   };
 }
