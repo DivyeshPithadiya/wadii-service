@@ -251,82 +251,61 @@ const hasPerm = (role?: RoleSnapshot, perm?: string): boolean => {
  * Priority:
  *   1) req.params.businessId
  *   2) req.params.venueId -> look up Venue.businessId
- *   3) req.params.packageId -> look up Package.venueId -> Venue.businessId
- *   4) req.body.businessId
- *   5) req.body.venueId -> look up Venue.businessId
+ *   3) req.query.venueId -> look up Venue.businessId (for GET requests with query params)
+ *   4) req.query.businessId (for GET requests with query params)
+ *   5) req.body.businessId
+ *   6) req.body.venueId -> look up Venue.businessId
  */
 export async function resolveBusinessId(
   req: Request
 ): Promise<string | undefined> {
-  const start = Date.now();
-  const p = req.params ?? {};
-  const b = req.body ?? {};
-  console.log("\n────────── resolveBusinessId ──────────");
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  console.log("req.params:", p);
-  console.log("req.body:", req.body);
-
   try {
+    const p = req.params ?? {};
+    const b = req.body ?? {};
+    const q = req.query ?? {};
+
     // (1) Direct businessId param
-    const bFromParams = p["businessId"];
-    if (bFromParams) {
-      console.log("🟢 Found businessId in params:", bFromParams);
-      console.log(`resolveBusinessId completed in ${Date.now() - start}ms`);
-      console.log("──────────────────────────────────────────────\n");
-      return bFromParams;
+    if (p["businessId"]) {
+      return p["businessId"];
     }
 
     // (2) venueId param
-    const vFromParams = p["venueId"];
-    if (vFromParams) {
-      console.log("🔍 Found venueId in params:", vFromParams);
-      const venue = await Venue.findById(oid(vFromParams))
+    if (p["venueId"]) {
+      const venue = await Venue.findById(oid(p["venueId"]))
         .select("businessId")
         .lean();
-      console.log("Venue lookup result:", venue);
-      const businessId = venue ? String(venue.businessId) : undefined;
-      console.log("Resolved businessId:", businessId);
-      console.log(`resolveBusinessId completed in ${Date.now() - start}ms`);
-      console.log("──────────────────────────────────────────────\n");
-      return businessId;
+      return venue ? String(venue.businessId) : undefined;
     }
 
-    // (3) packageId param
-
-    // (4) businessId in body
-    const bFromBody = (req.body as any)?.businessId;
-    if (bFromBody) {
-      console.log("🟢 Found businessId in body:", bFromBody);
-      console.log(`resolveBusinessId completed in ${Date.now() - start}ms`);
-      console.log("──────────────────────────────────────────────\n");
-      return bFromBody;
-    }
-
-    // (5) venueId in body
-    const vFromBody = (req.body as any)?.venueId;
-    if (vFromBody) {
-      console.log("🔍 Found venueId in body:", vFromBody);
-      const venue = await Venue.findById(oid(vFromBody))
+    // (3) venueId in query (for GET requests)
+    if (q["venueId"] && typeof q["venueId"] === "string") {
+      const venue = await Venue.findById(oid(q["venueId"]))
         .select("businessId")
         .lean();
-      console.log("manager lookup result:", venue);
-      const businessId = venue ? String(venue.businessId) : undefined;
-      console.log("Resolved businessId:", businessId);
-      console.log(`resolveBusinessId completed in ${Date.now() - start}ms`);
-      console.log("──────────────────────────────────────────────\n");
-      return businessId;
+      return venue ? String(venue.businessId) : undefined;
     }
 
-    console.warn(
-      "⚠️ No businessId or related identifiers found → returning undefined"
-    );
-    console.log(`resolveBusinessId completed in ${Date.now() - start}ms`);
-    console.log("──────────────────────────────────────────────\n");
+    // (4) businessId in query (for GET requests)
+    if (q["businessId"] && typeof q["businessId"] === "string") {
+      return q["businessId"];
+    }
+
+    // (5) businessId in body
+    if (b?.businessId) {
+      return b.businessId;
+    }
+
+    // (6) venueId in body
+    if (b?.venueId) {
+      const venue = await Venue.findById(oid(b.venueId))
+        .select("businessId")
+        .lean();
+      return venue ? String(venue.businessId) : undefined;
+    }
+
     return undefined;
   } catch (err: any) {
-    console.error("💥 resolveBusinessId error:", err);
-    console.log(`resolveBusinessId failed after ${Date.now() - start}ms`);
-    console.log("──────────────────────────────────────────────\n");
+    console.error("Error resolving businessId:", err);
     return undefined;
   }
 }
@@ -342,56 +321,32 @@ export async function rolesMiddleware(
   res: Response,
   next: NextFunction
 ) {
-  const start = Date.now();
-  const extReq = req as any; // Cast to avoid TypeScript issues
-
-  console.log("\n────────── rolesMiddleware invoked ──────────");
-  console.log(
-    `[${new Date().toISOString()}] Request: ${req.method} ${req.originalUrl}`
-  );
-  console.log("Initial extReq.user:", extReq.user);
-  console.log("Initial extReq.userRole:", extReq.userRole);
-
   try {
-    // if already set (e.g., by a previous middleware), skip
+    const extReq = req as any;
+
+    // If already set (e.g., by a previous middleware), skip
     if (extReq.userRole) {
-      console.log(
-        "🟡 userRole already set in request → skipping role resolution"
-      );
       return next();
     }
 
     if (!extReq.user?.userId) {
-      console.warn("🔴 No userId found in extReq.user → Unauthorized");
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    console.log("🟢 userId found:", extReq.user.userId);
-
     // Check if user is a developer - grant full access
     if (extReq.user?.role === "developer") {
-      console.log("👨‍💻 Developer detected → granting full access");
       extReq.userRole = {
         role: "developer",
-        permissions: ["*"], // All permissions
+        permissions: ["*"],
       };
-      console.log(`rolesMiddleware completed in ${Date.now() - start}ms`);
-      console.log("──────────────────────────────── ─────────────\n");
       return next();
     }
 
     const businessId = await resolveBusinessId(req);
-    console.log("Resolved businessId:", businessId);
 
     if (!businessId) {
-      console.log("🟠 No businessId (route not business-scoped) → proceeding");
       return next();
     }
-
-    console.log("🔍 Fetching UserBusinessRole for:", {
-      userId: extReq.user.userId,
-      businessId,
-    });
 
     const roleDoc = await UserBusinessRole.findOne({
       userId: oid(extReq.user.userId),
@@ -400,30 +355,16 @@ export async function rolesMiddleware(
       .select("role permissions")
       .lean();
 
-    console.log("roleDoc result:", roleDoc);
-
     if (roleDoc) {
       extReq.userRole = {
         role: roleDoc.role,
         permissions: roleDoc.permissions ?? [],
       };
-      console.log("✅ Assigned userRole:", extReq.userRole);
-    } else {
-      extReq.userRole = undefined;
-      console.warn(
-        "⚠️ No matching UserBusinessRole found → userRole undefined"
-      );
     }
-
-    console.log(`rolesMiddleware completed in ${Date.now() - start}ms`);
-    console.log("──────────────────────────────── ─────────────\n");
 
     return next();
   } catch (err: any) {
-    console.error("💥 rolesMiddleware error:", err);
-    console.log(`rolesMiddleware failed after ${Date.now() - start}ms`);
-    console.log("──────────────────────────────────────────────\n");
-
+    console.error("Error in rolesMiddleware:", err);
     return res
       .status(500)
       .json({ success: false, message: "Failed to resolve user role" });
@@ -433,41 +374,26 @@ export async function rolesMiddleware(
 /**
  * requirePerm
  * - Route guard for specific permission(s).
- * - If user is superadmin, always  allowed.
+ * - If user is developer, always allowed.
  * - If no role on request, it tries to resolve businessId and load the role (same as rolesMiddleware).
  */
-
 export function requirePerm(perm: string | string[]) {
   const perms = Array.isArray(perm) ? perm : [perm];
 
   return async (req: Request, res: Response, next: NextFunction) => {
-    const start = Date.now();
-    const extReq = req as any;
-
-    console.log("\n────────── requirePerm middleware ──────────");
-    console.log(
-      `[${new Date().toISOString()}] Request: ${req.method} ${req.originalUrl}`
-    );
-    console.log("🔸 Required permissions:", perms);
-    console.log("🔹 Initial extReq.user:", extReq.user);
-    console.log("🔹 Initial extReq.userRole:", extReq.userRole);
-
     try {
-      // 🔐 Check user presence
+      const extReq = req as any;
+
+      // Check user presence
       if (!extReq.user?.userId) {
-        console.warn("🔴 No userId found in request → Unauthorized");
         return res
           .status(401)
           .json({ success: false, message: "Unauthorized" });
       }
 
-      console.log("🟢 Authenticated userId:", extReq.user.userId);
-
-      // 🧩 Ensure userRole is present (if not, fetch)
+      // Ensure userRole is present (if not, fetch)
       if (!extReq.userRole) {
-        console.log("🟠 userRole missing → attempting to resolve from DB...");
         const businessId = await resolveBusinessId(req);
-        console.log("Resolved businessId:", businessId);
 
         if (businessId) {
           const roleDoc = await UserBusinessRole.findOne({
@@ -477,60 +403,35 @@ export function requirePerm(perm: string | string[]) {
             .select("role permissions")
             .lean();
 
-          console.log("roleDoc result:", roleDoc);
-
           if (roleDoc) {
             extReq.userRole = {
               role: roleDoc.role,
               permissions: roleDoc.permissions ?? [],
             } as RoleSnapshot;
-            console.log("✅ Assigned extReq.userRole:", extReq.userRole);
-          } else {
-            console.warn("⚠️ No roleDoc found for user/business combo");
           }
-        } else {
-          console.warn("⚠️ No businessId resolved → cannot assign role");
         }
-      } else {
-        console.log("🟡 userRole already exists → skipping DB lookup");
       }
 
-      // 🧾 Developer bypass
+      // Developer bypass
       if (extReq.userRole?.role === "developer") {
-        console.log("🧑‍💻 Developer role detected → full access granted");
-        console.log(`requirePerm completed in ${Date.now() - start}ms`);
-        console.log("──────────────────────────────────────────────\n");
         return next();
       }
 
-      // 🧮 Permission check
-      console.log("🔍 Checking permissions...");
+      // Permission check
       const ok = perms.every((p) =>
         hasPerm(extReq.userRole as RoleSnapshot | undefined, p)
       );
-      console.log("Permission check result:", ok);
 
       if (!ok) {
-        console.warn("⛔ Permission denied");
-        console.log(`requirePerm completed in ${Date.now() - start}ms`);
-        console.log("──────────────────────────────────────────────\n");
-
         return res.status(403).json({
           success: false,
           message: "Forbidden: insufficient permissions",
         });
       }
 
-      console.log("✅ Permission granted");
-      console.log(`requirePerm completed in ${Date.now() - start}ms`);
-      console.log("──────────────────────────────────────────────\n");
-
       return next();
     } catch (err: any) {
-      console.error("💥 requirePerm error:", err);
-      console.log(`requirePerm failed after ${Date.now() - start}ms`);
-      console.log("──────────────────────────────────────────────\n");
-
+      console.error("Error in requirePerm:", err);
       return res
         .status(500)
         .json({ success: false, message: "Role/permission check failed" });
@@ -583,7 +484,7 @@ export const RoleHelper = {
 
     return async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const extReq = req as any; // Cast to avoid TypeScript issues
+        const extReq = req as any;
 
         if (!extReq.user?.userId) {
           return res
@@ -611,8 +512,6 @@ export const RoleHelper = {
           }
         }
 
-        console.log(extReq);
-
         if (!extReq.userRole || !allowedRoles.includes(extReq.userRole.role)) {
           return res.status(403).json({
             success: false,
@@ -622,6 +521,7 @@ export const RoleHelper = {
 
         return next();
       } catch (err: any) {
+        console.error("Error in requireRole:", err);
         return res
           .status(500)
           .json({ success: false, message: "Role check failed" });
