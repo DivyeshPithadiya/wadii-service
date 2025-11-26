@@ -114,6 +114,41 @@ const bookingSchema = new Schema<IBooking>(
               required: false,
               trim: true,
             },
+            bankDetails: {
+              type: {
+                accountNumber: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                accountHolderName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                ifscCode: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                bankName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                branchName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                upiId: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+              },
+              required: false,
+            },
           },
           required: false,
         },

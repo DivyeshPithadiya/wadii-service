@@ -31,6 +31,14 @@ export interface IBooking extends Document {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
@@ -83,6 +91,14 @@ export interface CreateBookingDTO {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
@@ -125,6 +141,14 @@ export interface UpdateBookingDTO {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
