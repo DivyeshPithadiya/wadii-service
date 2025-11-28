@@ -22,6 +22,14 @@ export interface ILead extends Document {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   };
   services?: Array<{
     service: string;
@@ -29,6 +37,14 @@ export interface ILead extends Document {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
@@ -62,6 +78,14 @@ export interface CreateLeadDTO {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   };
   services?: Array<{
     service: string;
@@ -69,6 +93,14 @@ export interface CreateLeadDTO {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
@@ -97,6 +129,14 @@ export interface UpdateLeadDTO {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   };
   services?: Array<{
     service: string;
@@ -104,6 +144,14 @@ export interface UpdateLeadDTO {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;

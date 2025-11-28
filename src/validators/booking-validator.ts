@@ -3,6 +3,18 @@ import { z } from "zod";
 
 
 /**
+ * Bank details schema
+ */
+const bankDetailsSchema = z.object({
+  accountNumber: z.string().optional(),
+  accountHolderName: z.string().optional(),
+  ifscCode: z.string().optional(),
+  bankName: z.string().optional(),
+  branchName: z.string().optional(),
+  upiId: z.string().optional(),
+});
+
+/**
  * Package schema
  */
 const packageSchema = z.object({
@@ -22,6 +34,7 @@ const serviceSchema = z.object({
       name: z.string().optional(),
       email: z.string().email().optional(),
       phone: z.string().min(10).optional(),
+      bankDetails: bankDetailsSchema.optional(),
     })
     .optional(),
   price: z.number().min(0, "Price must be positive").default(0),
@@ -57,6 +70,7 @@ export const createBookingSchema = z
         name: z.string(),
         email: z.string().email(),
         phone: z.string(),
+        bankDetails: bankDetailsSchema.optional(),
       })
       .optional(),
     services: z.array(serviceSchema).optional(),
@@ -112,6 +126,7 @@ export const updateBookingSchema = z
         name: z.string(),
         email: z.string().email(),
         phone: z.string(),
+        bankDetails: bankDetailsSchema.optional(),
       })
       .optional(),
     services: z.array(serviceSchema).optional(),

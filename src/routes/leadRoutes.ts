@@ -5,7 +5,7 @@ import { LeadController } from "../controllers/leadController";
 import { authMiddleware } from "../middlewares/auth";
 import { rolesMiddleware, requirePerm, ROLE_PERMS } from "../middlewares/roles";
 import { validate } from "../middlewares/validate";
-import { objectId } from "../utils/validator";
+import { objectId, bankDetailsSchema } from "../utils/validator";
 
 const leadRoutes = Router();
 
@@ -35,6 +35,7 @@ const serviceSchema = z.object({
       name: z.string().optional(),
       email: z.string().email().optional(),
       phone: z.string().optional(),
+      bankDetails: bankDetailsSchema.optional(),
     })
     .optional(),
   price: z.number().min(0, "Price must be positive").default(0),
@@ -59,6 +60,7 @@ const createLeadSchema = z.object({
       name: z.string(),
       email: z.string().email(),
       phone: z.string(),
+      bankDetails: bankDetailsSchema.optional(),
     })
     .optional(),
 }).refine(
@@ -87,6 +89,7 @@ const updateLeadSchema = z
         name: z.string(),
         email: z.string().email(),
         phone: z.string(),
+        bankDetails: bankDetailsSchema.optional(),
       })
       .optional(),
     notes: z.string().optional(),

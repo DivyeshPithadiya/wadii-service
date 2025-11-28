@@ -27,15 +27,27 @@ export class BookingController {
     res: Response
   ): Promise<void> {
     try {
+      console.log("---- CREATE BOOKING REQUEST RECEIVED ----");
+      console.log("User:", req.user);
+      console.log("Body:", req.body);
+
       if (!req.user?.userId) {
+        console.log("Unauthorized request: Missing userId");
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
+
       // Check slot availability before creating
       if (!req.body.eventStartDateTime || !req.body.eventEndDateTime) {
+        console.log("❌ Invalid datetime range");
         res.status(400).json({ success: false, message: "Invalid datetime range" });
         return;
       }
+
+      console.log("Checking slot availability...");
+      console.log("Venue ID:", req.body.venueId);
+      console.log("Start DateTime:", req.body.eventStartDateTime);
+      console.log("End DateTime:", req.body.eventEndDateTime);
 
       const isAvailable = await BookingService.checkSlotAvailability(
         req.body.venueId,
@@ -43,7 +55,10 @@ export class BookingController {
         new Date(req.body.eventEndDateTime)
       );
 
+      console.log("Slot Available:", isAvailable);
+
       if (!isAvailable) {
+        console.log("❌ Time slot unavailable");
         res.status(409).json({
           success: false,
           message: "Time slot is not available for this venue",
@@ -58,7 +73,12 @@ export class BookingController {
         leadId: req.body.leadId ? oid(req.body.leadId) : null,
       };
 
+      console.log("Creating booking with data:", bookingData);
+
       const booking = await BookingService.createBooking(bookingData);
+
+      console.log("✅ Booking created successfully");
+      console.log("Booking ID:", booking._id);
 
       res.status(201).json({
         success: true,
@@ -66,6 +86,7 @@ export class BookingController {
         data: booking,
       });
     } catch (error: any) {
+      console.error("❌ Error in createBooking:", error);
       res.status(400).json({ success: false, message: error.message });
     }
   }

@@ -10,6 +10,14 @@ interface IVendor {
   name: string;
   email: string;
   phone: string;
+  bankDetails?: {
+    accountNumber?: string;
+    accountHolderName?: string;
+    ifscCode?: string;
+    bankName?: string;
+    branchName?: string;
+    upiId?: string;
+  };
 }
 
 interface IFoodPackage {
@@ -68,6 +76,14 @@ export interface ICreateVenueData {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   }>;
   services?: Array<{
     service: string;
@@ -75,6 +91,14 @@ export interface ICreateVenueData {
       name: string;
       email: string;
       phone: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     }>;
   }>;
   createdAt: Date;
@@ -671,11 +695,30 @@ export class VenueService {
     userId: string,
     userRole?: RoleSnapshot
   ) {
+    console.log("========== ADD CATERING VENDOR START ==========");
+    console.log({
+      timestamp: new Date().toISOString(),
+      action: "ADD_CATERING_VENDOR_INIT",
+      venueId,
+      vendorData,
+      userId,
+    });
+
     const venue = await Venue.findOne({ _id: oid(venueId) });
-    if (!venue) throw new Error("Venue not found");
+    if (!venue) {
+      console.error("[VALIDATION] ❌ Venue not found", { venueId });
+      throw new Error("Venue not found");
+    }
+
+    console.log("[VALIDATION] ✅ Venue found:", {
+      venueId: venue._id,
+      venueName: venue.venueName,
+      currentCateringVendors: venue.cateringServiceVendor?.length || 0,
+    });
 
     // Permission check
     if (!hasPerm(userRole, PERMS.VENUE_UPDATE)) {
+      console.log("[AUTH] Checking scoped permissions...");
       const hasAccess = await UserBusinessRole.findOne({
         userId: oid(userId),
         businessId: venue.businessId,
@@ -684,14 +727,55 @@ export class VenueService {
           { permissions: { $in: [PERMS.VENUE_UPDATE] } },
         ],
       }).lean();
-      if (!hasAccess) throw new Error("Permission denied");
+      if (!hasAccess) {
+        console.error("[AUTH] ❌ Permission denied", { userId, venueId });
+        throw new Error("Permission denied");
+      }
+      console.log("[AUTH] ✅ Scoped permission granted");
+    } else {
+      console.log("[AUTH] ✅ Global VENUE_UPDATE permission granted");
     }
 
     if (!venue.cateringServiceVendor) venue.cateringServiceVendor = [];
+
+    console.log("[DATA] Vendor data being added:", {
+      name: vendorData.name,
+      email: vendorData.email,
+      phone: vendorData.phone,
+      hasBankDetails: !!vendorData.bankDetails,
+      bankDetails: vendorData.bankDetails,
+    });
+
     venue.cateringServiceVendor.push(vendorData);
     venue.updatedBy = updatedBy;
+    venue.markModified('cateringServiceVendor');
+
+    console.log("[DB] Saving venue with new catering vendor...");
     await venue.save();
-    return venue;
+    console.log("[DB] ✅ Venue saved successfully");
+
+    // Fetch the updated venue to ensure all fields are populated
+    console.log("[DB] Fetching updated venue...");
+    const updatedVenue = await Venue.findById(oid(venueId));
+
+    if (updatedVenue) {
+      const addedVendor = updatedVenue.cateringServiceVendor?.[
+        updatedVenue.cateringServiceVendor.length - 1
+      ];
+      console.log("[RESPONSE] Last added vendor:", {
+        name: addedVendor?.name,
+        email: addedVendor?.email,
+        phone: addedVendor?.phone,
+        hasBankDetails: !!addedVendor?.bankDetails,
+        bankDetails: addedVendor?.bankDetails,
+      });
+      console.log("[RESPONSE] Total catering vendors:",
+        updatedVenue.cateringServiceVendor?.length || 0
+      );
+    }
+
+    console.log("========== ADD CATERING VENDOR COMPLETE ==========");
+    return updatedVenue;
   }
 
   /**

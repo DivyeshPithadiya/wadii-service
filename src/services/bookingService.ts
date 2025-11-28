@@ -10,10 +10,17 @@ export class BookingService {
    */
   static async createBooking(bookingData: Partial<IBooking>): Promise<IBooking> {
     try {
+      console.log("---- BookingService.createBooking ----");
+      console.log("Booking Data:", JSON.stringify(bookingData, null, 2));
+
       const booking = new Booking(bookingData);
+      console.log("Booking instance created, saving to database...");
+
       await booking.save();
+      console.log("Booking saved successfully. ID:", booking._id);
 
       // Populate and return
+      console.log("Populating related fields...");
       await booking.populate([
         { path: "venueId", select: "venueName venueType address" },
         { path: "leadId", select: "clientName contactNo email leadStatus" },
@@ -21,8 +28,10 @@ export class BookingService {
         { path: "updatedBy", select: "_id email firstName lastName" }
       ]);
 
+      console.log("Population complete. Returning booking.");
       return booking;
     } catch (error: any) {
+      console.error("❌ Error in BookingService.createBooking:", error);
       throw new Error(`Error creating booking: ${error.message}`);
     }
   }

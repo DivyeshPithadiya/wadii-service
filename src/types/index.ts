@@ -68,6 +68,14 @@ export interface IVenue extends Document<Types.ObjectId> {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   }>;
   services?: Array<{
     service: string;
@@ -75,6 +83,14 @@ export interface IVenue extends Document<Types.ObjectId> {
       name: string;
       email: string;
       phone: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     }>;
   }>;
   bookingPreferences?: {

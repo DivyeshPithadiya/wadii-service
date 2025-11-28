@@ -19,6 +19,14 @@ interface ServicesAndVendorsBody {
   name?: string;
   email?: string;
   phone?: string;
+  bankDetails?: {
+    accountNumber?: string;
+    accountHolderName?: string;
+    ifscCode?: string;
+    bankName?: string;
+    branchName?: string;
+    upiId?: string;
+  };
   description?: string;
   price?: number;
   priceType?: "flat" | "per_guest";
@@ -275,7 +283,7 @@ export class VenueController {
       }
 
       const { venueId, serviceName } = req.params;
-      const { name, email, phone } = req.body;
+      const { name, email, phone, bankDetails } = req.body;
 
       if (!venueId || !serviceName) {
         res.status(400).json({
@@ -296,7 +304,7 @@ export class VenueController {
       const venue = await VenueService.addServiceVendor(
         venueId,
         serviceName,
-        { name, email, phone },
+        { name, email, phone, bankDetails },
         req.user.userId,
         req.user.userId,
         req.userRole as RoleSnapshot | undefined
@@ -540,7 +548,23 @@ export class VenueController {
       }
 
       const { venueId } = req.params;
-      const { name, email, phone } = req.body;
+
+      console.log("========== CONTROLLER: ADD CATERING VENDOR ==========");
+      console.log("[CONTROLLER] Full request body:", JSON.stringify(req.body, null, 2));
+      console.log("[CONTROLLER] Request headers:", {
+        contentType: req.headers['content-type'],
+        contentLength: req.headers['content-length'],
+      });
+
+      const { name, email, phone, bankDetails } = req.body;
+
+      console.log("[CONTROLLER] Extracted fields:", {
+        name,
+        email,
+        phone,
+        bankDetails,
+        hasBankDetails: !!bankDetails,
+      });
 
       if (!venueId) {
         res
@@ -559,7 +583,7 @@ export class VenueController {
 
       const venue = await VenueService.addCateringVendor(
         venueId,
-        { name, email, phone },
+        { name, email, phone, bankDetails },
         req.user.userId,
         req.user.userId,
         req.userRole as RoleSnapshot | undefined

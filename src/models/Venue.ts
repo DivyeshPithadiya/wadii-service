@@ -104,6 +104,42 @@ const venueSchema = new Schema<IVenue>(
           required: true,
           trim: true,
         },
+        bankDetails: {
+          type: {
+            accountNumber: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            accountHolderName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            ifscCode: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            bankName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            branchName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            upiId: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            _id: false,
+          },
+          required: false,
+        },
       },
     ],
     services: [
@@ -130,6 +166,42 @@ const venueSchema = new Schema<IVenue>(
               type: String,
               required: true,
               trim: true,
+            },
+            bankDetails: {
+              type: {
+                accountNumber: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                accountHolderName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                ifscCode: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                bankName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                branchName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                upiId: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                _id: false,
+              },
+              required: false,
             },
           },
         ],
