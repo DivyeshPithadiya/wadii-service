@@ -1,0 +1,245 @@
+{
+  "info": {
+    "name": "Venue ERP - Transactions & PO API",
+    "_postman_id": "c742c2f9-b01c-4d2e-bb88-c12ef97a9f21",
+    "description": "Complete API collection for Transactions, Purchase Orders, and Reports.\nAuth token included as Bearer token at Collection level.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Create Transaction",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"64abc123...\",\n  \"amount\": 5000,\n  \"mode\": \"upi\",\n  \"direction\": \"inbound\",\n  \"status\": \"success\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"]
+            }
+          },
+          "response": [
+            {
+              "name": "Sample Response",
+              "originalRequest": {},
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"...\",\n    \"direction\": \"inbound\",\n    \"amount\": 5000\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Transactions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?direction=outbound&vendorType=catering&status=success",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                { "key": "direction", "value": "outbound" },
+                { "key": "vendorType", "value": "catering" },
+                { "key": "status", "value": "success" }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Saved Response",
+              "body": "{ \"success\": true, \"data\": [] }"
+            }
+          ]
+        },
+        {
+          "name": "Get Transaction by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/transactions/:id"
+          },
+          "response": [
+            {
+              "name": "Sample",
+              "body": "{ \"success\": true, \"data\": {\"_id\": \"64xyz789...\"} }"
+            }
+          ]
+        },
+        {
+          "name": "Get Booking for Transaction",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/transactions/:id/booking"
+          }
+        },
+        {
+          "name": "Update Transaction",
+          "request": {
+            "method": "PATCH",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"refunded\",\n  \"notes\": \"Customer requested refund\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/transactions/:id"
+          }
+        },
+        {
+          "name": "Get Transactions by Booking",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/transactions/booking/:bookingId"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Purchase Orders",
+      "item": [
+        {
+          "name": "Create Purchase Order",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"64abc123...\",\n  \"venueId\": \"64venue...\",\n  \"vendorType\": \"catering\",\n  \"vendorDetails\": {\n    \"name\": \"ABC Caterers\",\n    \"email\": \"abc@caterers.com\",\n    \"phone\": \"+91 9876543210\",\n    \"bankDetails\": {\n      \"accountNumber\": \"1234567890\",\n      \"accountHolderName\": \"ABC Caterers\",\n      \"ifscCode\": \"SBIN0001234\",\n      \"bankName\": \"State Bank of India\"\n    }\n  },\n  \"lineItems\": [\n    {\n      \"description\": \"Catering Services\",\n      \"serviceType\": \"Catering\",\n      \"quantity\": 100,\n      \"unitPrice\": 500,\n      \"totalPrice\": 50000\n    }\n  ],\n  \"totalAmount\": 50000,\n  \"dueDate\": \"2025-02-15\",\n  \"notes\": \"Wedding catering for 100 guests\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/purchase-orders"
+          },
+          "response": [
+            {
+              "name": "Saved Response",
+              "body": "{\n  \"success\": true,\n  \"data\": { \"poNumber\": \"PO-2025-01-0001\", \"status\": \"draft\" }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Purchase Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/purchase-orders?venueId=xxx&status=approved",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "purchase-orders"],
+              "query": [
+                { "key": "venueId", "value": "xxx" },
+                { "key": "status", "value": "approved" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get PO by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/purchase-orders/:id"
+          }
+        },
+        {
+          "name": "Update PO",
+          "request": {
+            "method": "PATCH",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"notes\": \"Updated notes\" }",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/purchase-orders/:id"
+          }
+        },
+        {
+          "name": "Approve PO",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/purchase-orders/:id/approve"
+          }
+        },
+        {
+          "name": "Cancel PO",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"reason\": \"Vendor cancelled service\" }",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/purchase-orders/:id/cancel"
+          }
+        },
+        {
+          "name": "Generate PO for Booking",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/purchase-orders/generate/:bookingId"
+          }
+        },
+        {
+          "name": "Get POs by Booking",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/purchase-orders/booking/:bookingId"
+          }
+        },
+        {
+          "name": "PO Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/purchase-orders/summary?venueId=xxx"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Vendor Payments Report",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/vendor-payments?venueId=xxx&vendorType=catering"
+          }
+        },
+        {
+          "name": "Cash Ledger",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/cash-ledger?venueId=xxx"
+          }
+        },
+        {
+          "name": "Income & Expenditure",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/income-expenditure?venueId=xxx"
+          }
+        },
+        {
+          "name": "Transactions Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/transactions-summary?startDate=xxx&endDate=xxx"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "authToken", "value": "ADD_YOUR_TOKEN_HERE" }
+  ]
+}

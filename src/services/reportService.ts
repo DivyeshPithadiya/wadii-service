@@ -1,4 +1,6 @@
 import { Booking } from "../models/Booking";
+import { Transaction } from "../models/Transaction";
+import { PurchaseOrder } from "../models/PurchaseOrder";
 import { Types } from "mongoose";
 import {
   CashLedgerQueryParams,
@@ -15,7 +17,7 @@ const oid = (id: string) => new Types.ObjectId(id);
 
 export class ReportService {
   /**
-   * Generate Cash Ledger Report
+   * Generate Cash Ledger Report (Refactored to use Transaction model)
    * Tracks payments by mode with debtor/creditor status
    */
   static async getCashLedgerReport(
@@ -24,30 +26,50 @@ export class ReportService {
     try {
       const { venueId, startDate, endDate, paymentMode } = params;
 
-      // Build query
-      const query: any = {
+      // Build booking query
+      const bookingQuery: any = {
         venueId: oid(venueId),
       };
 
       // Add date filters if provided
       if (startDate || endDate) {
-        query.eventStartDateTime = {};
+        bookingQuery.eventStartDateTime = {};
         if (startDate) {
-          query.eventStartDateTime.$gte = new Date(startDate);
+          bookingQuery.eventStartDateTime.$gte = new Date(startDate);
         }
         if (endDate) {
-          query.eventStartDateTime.$lte = new Date(endDate);
+          bookingQuery.eventStartDateTime.$lte = new Date(endDate);
         }
-      }
-
-      // Add payment mode filter if provided
-      if (paymentMode) {
-        query["payment.paymentMode"] = paymentMode;
       }
 
       // Fetch bookings
-      const bookings = await Booking.find(query).sort({
+      const bookings = await Booking.find(bookingQuery).sort({
         eventStartDateTime: 1,
+      });
+
+      const bookingIds = bookings.map((b) => b._id);
+
+      // Build transaction query
+      const transactionQuery: any = {
+        bookingId: { $in: bookingIds },
+        status: "success",
+      };
+
+      if (paymentMode) {
+        transactionQuery.mode = paymentMode;
+      }
+
+      // Fetch all successful transactions for these bookings
+      const transactions = await Transaction.find(transactionQuery);
+
+      // Group transactions by booking
+      const transactionsByBooking = new Map<string, typeof transactions>();
+      transactions.forEach((txn) => {
+        const bookingId = txn.bookingId.toString();
+        if (!transactionsByBooking.has(bookingId)) {
+          transactionsByBooking.set(bookingId, []);
+        }
+        transactionsByBooking.get(bookingId)!.push(txn);
       });
 
       // Initialize summary
@@ -69,20 +91,37 @@ export class ReportService {
 
       // Process each booking
       for (const booking of bookings) {
-        const { payment } = booking;
-        const totalAmount = payment.totalAmount || 0;
-        const advanceAmount = payment.advanceAmount || 0;
-        const pendingAmount = totalAmount - advanceAmount;
-        const mode = payment.paymentMode as keyof typeof summary.byPaymentMode;
+        const bookingId = booking._id.toString();
+        const bookingTransactions = transactionsByBooking.get(bookingId) || [];
+
+        // Calculate total paid from transactions
+        const totalPaid = bookingTransactions.reduce(
+          (sum, txn) => sum + txn.amount,
+          0
+        );
+
+        const totalAmount = booking.payment.totalAmount || 0;
+        const pendingAmount = totalAmount - totalPaid;
 
         // Update totals
-        summary.totalReceived += advanceAmount;
+        summary.totalReceived += totalPaid;
         summary.totalPending += pendingAmount;
 
-        // Update by payment mode
-        if (summary.byPaymentMode[mode]) {
-          summary.byPaymentMode[mode].received += advanceAmount;
-          summary.byPaymentMode[mode].pending += pendingAmount;
+        // Update by payment mode (from transactions)
+        bookingTransactions.forEach((txn) => {
+          const mode = txn.mode as keyof typeof summary.byPaymentMode;
+          if (summary.byPaymentMode[mode]) {
+            summary.byPaymentMode[mode].received += txn.amount;
+          }
+        });
+
+        // Distribute pending amount across payment modes (proportionally or use primary mode)
+        if (pendingAmount > 0) {
+          const mode = booking.payment
+            .paymentMode as keyof typeof summary.byPaymentMode;
+          if (summary.byPaymentMode[mode]) {
+            summary.byPaymentMode[mode].pending += pendingAmount;
+          }
         }
 
         // Add to debtors if pending amount exists
@@ -93,28 +132,45 @@ export class ReportService {
             contactNo: booking.contactNo,
             email: booking.email,
             totalAmount,
-            advanceAmount,
+            advanceAmount: totalPaid,
             pendingAmount,
             eventDate: booking.eventStartDateTime,
-            paymentMode: payment.paymentMode,
+            paymentMode: booking.payment.paymentMode,
             occasionType: booking.occasionType,
           });
         }
+      }
 
-        // Process services for creditors
-        if (booking.services && booking.services.length > 0) {
-          for (const service of booking.services) {
-            if (service.vendor) {
-              creditors.push({
-                bookingId: booking._id,
-                serviceName: service.service,
-                vendorName: service.vendor.name,
-                amountDue: service.price,
-                eventDate: booking.eventStartDateTime,
-                bankDetails: service.vendor.bankDetails,
-              });
-            }
-          }
+      // Fetch creditors from PurchaseOrders (not from booking services)
+      const poQuery: any = {
+        bookingId: { $in: bookingIds },
+        status: { $nin: ["cancelled"] }, // Exclude cancelled POs
+      };
+
+      const purchaseOrders = await PurchaseOrder.find(poQuery).lean();
+
+      for (const po of purchaseOrders) {
+        // Get the booking for event date
+        const booking = bookings.find((b) => b._id.toString() === po.bookingId.toString());
+
+        // Calculate amount due (balance amount)
+        const amountDue = po.balanceAmount || 0;
+
+        // Only add as creditor if there's a balance due
+        if (amountDue > 0) {
+          creditors.push({
+            bookingId: po.bookingId,
+            serviceName: po.lineItems.map((item) => item.description).join(", "),
+            vendorName: po.vendorDetails.name,
+            amountDue: amountDue,
+            eventDate: booking?.eventStartDateTime || po.issueDate,
+            bankDetails: po.vendorDetails.bankDetails,
+            poNumber: po.poNumber,
+            poTotalAmount: po.totalAmount,
+            poPaidAmount: po.paidAmount,
+            poStatus: po.status,
+            vendorType: po.vendorType,
+          });
         }
       }
 
@@ -129,7 +185,7 @@ export class ReportService {
   }
 
   /**
-   * Generate Income & Expenditure Report
+   * Generate Income & Expenditure Report (Refactored to use Transaction model)
    * Category-wise financial breakdown
    */
   static async getIncomeExpenditureReport(
@@ -151,13 +207,13 @@ export class ReportService {
 
       if (groupBy === "service") {
         // Group by service
-        breakdown = await this.getBreakdownByService(query);
+        breakdown = await this.getBreakdownByService(query, startDate, endDate);
       } else if (groupBy === "occasionType") {
         // Group by occasion type
-        breakdown = await this.getBreakdownByOccasionType(query);
+        breakdown = await this.getBreakdownByOccasionType(query, startDate, endDate);
       } else if (groupBy === "month") {
         // Group by month
-        breakdown = await this.getBreakdownByMonth(query);
+        breakdown = await this.getBreakdownByMonth(query, startDate, endDate);
       }
 
       // Calculate totals
@@ -187,16 +243,29 @@ export class ReportService {
   }
 
   /**
-   * Helper: Get breakdown by service
+   * Helper: Get breakdown by service (Refactored to use Transaction model)
    */
   private static async getBreakdownByService(
-    query: any
+    query: any,
+    startDate: string,
+    endDate: string
   ): Promise<BreakdownItem[]> {
     const bookings = await Booking.find(query);
+    const bookingIds = bookings.map((b) => b._id);
 
-    // Calculate venue charges (booking revenue)
-    const venueIncome = bookings.reduce(
-      (sum, booking) => sum + (booking.payment?.totalAmount || 0),
+    // Fetch all successful transactions for these bookings
+    const transactions = await Transaction.find({
+      bookingId: { $in: bookingIds },
+      status: "success",
+      paidAt: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    });
+
+    // Calculate venue charges (booking revenue from transactions)
+    const venueIncome = transactions.reduce(
+      (sum, txn) => sum + txn.amount,
       0
     );
     const venueBookingsCount = bookings.length;
@@ -260,12 +329,35 @@ export class ReportService {
   }
 
   /**
-   * Helper: Get breakdown by occasion type
+   * Helper: Get breakdown by occasion type (Refactored to use Transaction model)
    */
   private static async getBreakdownByOccasionType(
-    query: any
+    query: any,
+    startDate: string,
+    endDate: string
   ): Promise<BreakdownItem[]> {
     const bookings = await Booking.find(query);
+    const bookingIds = bookings.map((b) => b._id);
+
+    // Fetch all successful transactions for these bookings
+    const transactions = await Transaction.find({
+      bookingId: { $in: bookingIds },
+      status: "success",
+      paidAt: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    });
+
+    // Group transactions by booking
+    const transactionsByBooking = new Map<string, number>();
+    transactions.forEach((txn) => {
+      const bookingId = txn.bookingId.toString();
+      transactionsByBooking.set(
+        bookingId,
+        (transactionsByBooking.get(bookingId) || 0) + txn.amount
+      );
+    });
 
     const occasionMap = new Map<
       string,
@@ -274,7 +366,8 @@ export class ReportService {
 
     for (const booking of bookings) {
       const occasionType = booking.occasionType;
-      const income = booking.payment?.totalAmount || 0;
+      const bookingId = booking._id.toString();
+      const income = transactionsByBooking.get(bookingId) || 0;
       let expenditure = 0;
 
       // Calculate expenditure from services
@@ -315,12 +408,35 @@ export class ReportService {
   }
 
   /**
-   * Helper: Get breakdown by month
+   * Helper: Get breakdown by month (Refactored to use Transaction model)
    */
   private static async getBreakdownByMonth(
-    query: any
+    query: any,
+    startDate: string,
+    endDate: string
   ): Promise<BreakdownItem[]> {
     const bookings = await Booking.find(query);
+    const bookingIds = bookings.map((b) => b._id);
+
+    // Fetch all successful transactions for these bookings
+    const transactions = await Transaction.find({
+      bookingId: { $in: bookingIds },
+      status: "success",
+      paidAt: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    });
+
+    // Group transactions by booking
+    const transactionsByBooking = new Map<string, number>();
+    transactions.forEach((txn) => {
+      const bookingId = txn.bookingId.toString();
+      transactionsByBooking.set(
+        bookingId,
+        (transactionsByBooking.get(bookingId) || 0) + txn.amount
+      );
+    });
 
     const monthMap = new Map<
       string,
@@ -333,7 +449,8 @@ export class ReportService {
         eventDate.getMonth() + 1
       ).padStart(2, "0")}`;
 
-      const income = booking.payment?.totalAmount || 0;
+      const bookingId = booking._id.toString();
+      const income = transactionsByBooking.get(bookingId) || 0;
       let expenditure = 0;
 
       // Calculate expenditure from services

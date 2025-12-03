@@ -1,4 +1,5 @@
 import { Booking } from "../models/Booking";
+import { Transaction } from "../models/Transaction";
 import { IBooking } from "../types/booking-types";
 import { Types } from "mongoose";
 
@@ -39,14 +40,32 @@ export class BookingService {
   /**
    * Get booking by ID
    */
-  static async getBookingById(bookingId: string): Promise<IBooking | null> {
+  static async getBookingById(bookingId: string): Promise<any> {
     try {
       const booking = await Booking.findById(oid(bookingId))
         .populate("venueId", "venueName venueType address")
         .populate("leadId", "clientName contactNo email leadStatus")
         .populate("createdBy", "_id email firstName lastName")
-        .populate("updatedBy", "_id email firstName lastName");
-      return booking;
+        .populate("updatedBy", "_id email firstName lastName")
+        .lean();
+
+      if (!booking) {
+        return null;
+      }
+
+      // Fetch transaction trail (all inbound transactions)
+      const transactionTrail = await Transaction.find({
+        bookingId: oid(bookingId),
+        direction: "inbound",
+      })
+        .select("amount mode status type paidAt notes referenceId createdAt")
+        .sort({ paidAt: 1, createdAt: 1 })
+        .lean();
+
+      return {
+        ...booking,
+        transactionTrail,
+      };
     } catch (error: any) {
       throw new Error(`Error fetching booking: ${error.message}`);
     }
@@ -65,7 +84,7 @@ export class BookingService {
       limit?: number;
       skip?: number;
     }
-  ): Promise<{ bookings: IBooking[]; total: number }> {
+  ): Promise<{ bookings: any[]; total: number }> {
     try {
       const query: any = {
         venueId,
@@ -98,9 +117,28 @@ export class BookingService {
         .populate("venueId", "venueName venueType")
         .populate("leadId", "clientName email")
         .populate("createdBy", "_id email firstName lastName")
-        .populate("updatedBy", "_id email firstName lastName");
+        .populate("updatedBy", "_id email firstName lastName")
+        .lean();
 
-      return { bookings, total };
+      // Fetch transaction trails for each booking
+      const bookingsWithTransactions = await Promise.all(
+        bookings.map(async (booking) => {
+          const transactionTrail = await Transaction.find({
+            bookingId: booking._id,
+            direction: "inbound",
+          })
+            .select("amount mode status type paidAt notes referenceId createdAt")
+            .sort({ paidAt: 1, createdAt: 1 })
+            .lean();
+
+          return {
+            ...booking,
+            transactionTrail,
+          };
+        })
+      );
+
+      return { bookings: bookingsWithTransactions, total };
     } catch (error: any) {
       throw new Error(`Error fetching bookings by venue: ${error.message}`);
     }

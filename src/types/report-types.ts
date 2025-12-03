@@ -62,6 +62,12 @@ export interface CreditorInfo {
     branchName?: string;
     upiId?: string;
   };
+  // PurchaseOrder specific fields
+  poNumber?: string;
+  poTotalAmount?: number;
+  poPaidAmount?: number;
+  poStatus?: string;
+  vendorType?: "catering" | "service";
 }
 
 export interface CashLedgerReportData {

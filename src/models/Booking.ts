@@ -220,7 +220,7 @@ const bookingSchema = new Schema<IBooking>(
       enum: ["setup", "event", "cleanup", "full_day"],
       default: "event",
     },
-    // Payment Details (Booking-specific)
+    // Payment Details (Summary only - actual transactions in Transaction model)
     payment: {
       totalAmount: {
         type: Number,
@@ -231,16 +231,19 @@ const bookingSchema = new Schema<IBooking>(
         type: Number,
         default: 0,
         min: 0,
+        // This is calculated from Transaction model, maintained for backward compatibility
       },
       paymentStatus: {
         type: String,
         enum: ["unpaid", "partially_paid", "paid"],
         default: "unpaid",
+        // This is calculated from Transaction model
       },
       paymentMode: {
         type: String,
         enum: ["cash", "card", "upi", "bank_transfer", "cheque", "other"],
         required: true,
+        // This represents the primary/default payment mode
       },
     },
     notes: {

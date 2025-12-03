@@ -5,6 +5,8 @@ import venueRoutes from "./venueRoutes";
 import managerRoutes from "./managerRoutes";
 import leadRoutes from "./leadRoutes";
 import bookingRoutes from "./bookingRoutes";
+import transactionRoutes from "./transactionRoutes";
+import purchaseOrderRoutes from "./purchaseOrderRoutes";
 import reportRoutes from "./reportRoutes";
 
 const router = Router();
@@ -25,8 +27,8 @@ router.use("/venues", venueRoutes);
 router.use("/managers", managerRoutes);
 router.use("/leads", leadRoutes);
 router.use("/bookings", bookingRoutes);
+router.use("/transactions", transactionRoutes);
+router.use("/purchase-orders", purchaseOrderRoutes);
 router.use("/reports", reportRoutes);
-
-
 
 export default router;

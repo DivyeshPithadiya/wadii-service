@@ -32,4 +32,28 @@ reportRoutes.get(
   ReportController.getIncomeExpenditureReport
 );
 
+/**
+ * Get Transactions Summary Report
+ * GET /api/reports/transactions-summary
+ * Query params: startDate (optional), endDate (optional), bookingId (optional)
+ * Required: booking.read permission (reports use same permissions as bookings)
+ */
+reportRoutes.get(
+  "/transactions-summary",
+  requirePerm(ROLE_PERMS.BOOKING_READ),
+  ReportController.getTransactionsSummary
+);
+
+/**
+ * Get Vendor Payments Report
+ * GET /api/reports/vendor-payments
+ * Query params: venueId (optional), startDate (optional), endDate (optional), vendorType (optional)
+ * Required: booking.read permission
+ */
+reportRoutes.get(
+  "/vendor-payments",
+  requirePerm(ROLE_PERMS.BOOKING_READ),
+  ReportController.getVendorPaymentsReport
+);
+
 export default reportRoutes;

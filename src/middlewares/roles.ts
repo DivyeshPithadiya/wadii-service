@@ -251,10 +251,13 @@ const hasPerm = (role?: RoleSnapshot, perm?: string): boolean => {
  * Priority:
  *   1) req.params.businessId
  *   2) req.params.venueId -> look up Venue.businessId
- *   3) req.query.venueId -> look up Venue.businessId (for GET requests with query params)
- *   4) req.query.businessId (for GET requests with query params)
- *   5) req.body.businessId
- *   6) req.body.venueId -> look up Venue.businessId
+ *   3) req.params.bookingId -> look up Booking.venueId -> Venue.businessId
+ *   4) req.query.venueId -> look up Venue.businessId (for GET requests with query params)
+ *   5) req.query.businessId (for GET requests with query params)
+ *   6) req.query.bookingId -> look up Booking.venueId -> Venue.businessId
+ *   7) req.body.businessId
+ *   8) req.body.venueId -> look up Venue.businessId
+ *   9) req.body.bookingId -> look up Booking.venueId -> Venue.businessId
  */
 export async function resolveBusinessId(
   req: Request
@@ -277,7 +280,21 @@ export async function resolveBusinessId(
       return venue ? String(venue.businessId) : undefined;
     }
 
-    // (3) venueId in query (for GET requests)
+    // (3) bookingId param -> lookup venue -> businessId
+    if (p["bookingId"]) {
+      const Booking = (await import("../models/Booking")).Booking;
+      const booking = await Booking.findById(oid(p["bookingId"]))
+        .select("venueId")
+        .lean();
+      if (booking) {
+        const venue = await Venue.findById(booking.venueId)
+          .select("businessId")
+          .lean();
+        return venue ? String(venue.businessId) : undefined;
+      }
+    }
+
+    // (4) venueId in query (for GET requests)
     if (q["venueId"] && typeof q["venueId"] === "string") {
       const venue = await Venue.findById(oid(q["venueId"]))
         .select("businessId")
@@ -285,22 +302,50 @@ export async function resolveBusinessId(
       return venue ? String(venue.businessId) : undefined;
     }
 
-    // (4) businessId in query (for GET requests)
+    // (5) businessId in query (for GET requests)
     if (q["businessId"] && typeof q["businessId"] === "string") {
       return q["businessId"];
     }
 
-    // (5) businessId in body
+    // (6) bookingId in query -> lookup venue -> businessId
+    if (q["bookingId"] && typeof q["bookingId"] === "string") {
+      const Booking = (await import("../models/Booking")).Booking;
+      const booking = await Booking.findById(oid(q["bookingId"]))
+        .select("venueId")
+        .lean();
+      if (booking) {
+        const venue = await Venue.findById(booking.venueId)
+          .select("businessId")
+          .lean();
+        return venue ? String(venue.businessId) : undefined;
+      }
+    }
+
+    // (7) businessId in body
     if (b?.businessId) {
       return b.businessId;
     }
 
-    // (6) venueId in body
+    // (8) venueId in body
     if (b?.venueId) {
       const venue = await Venue.findById(oid(b.venueId))
         .select("businessId")
         .lean();
       return venue ? String(venue.businessId) : undefined;
+    }
+
+    // (9) bookingId in body -> lookup venue -> businessId
+    if (b?.bookingId) {
+      const Booking = (await import("../models/Booking")).Booking;
+      const booking = await Booking.findById(oid(b.bookingId))
+        .select("venueId")
+        .lean();
+      if (booking) {
+        const venue = await Venue.findById(booking.venueId)
+          .select("businessId")
+          .lean();
+        return venue ? String(venue.businessId) : undefined;
+      }
     }
 
     return undefined;

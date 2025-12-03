@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { Types } from "mongoose";
 import { BookingService } from "../services/bookingService";
+import { TransactionService } from "../services/transactionService";
 import {
   CreateBookingReq,
   GetBookingReq,
@@ -79,6 +80,26 @@ export class BookingController {
 
       console.log("✅ Booking created successfully");
       console.log("Booking ID:", booking._id);
+
+      // Create initial transaction if advance amount is provided
+      if (req.body.payment?.advanceAmount && req.body.payment.advanceAmount > 0) {
+        console.log("Creating initial transaction for advance payment...");
+        try {
+          await TransactionService.createTransaction({
+            bookingId: booking._id.toString(),
+            amount: req.body.payment.advanceAmount,
+            mode: req.body.payment.paymentMode,
+            status: "success",
+            notes: "Initial advance payment",
+            paidAt: new Date(),
+            createdBy: req.user.userId,
+          });
+          console.log("✅ Initial transaction created");
+        } catch (txnError: any) {
+          console.error("⚠️ Warning: Failed to create initial transaction:", txnError.message);
+          // Don't fail the booking creation if transaction creation fails
+        }
+      }
 
       res.status(201).json({
         success: true,

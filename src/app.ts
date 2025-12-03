@@ -31,16 +31,21 @@ class App {
    * Initialize middlewares
    */
   private initializeMiddlewares(): void {
-    // Security middleware
-    this.app.use(helmet());
-
-    // CORS configuration
+    // CORS configuration (MUST be before helmet)
     this.app.use(
       cors({
-        origin: "*", // your frontend
+        origin: "*", // In production, replace with your frontend URL
         credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
+      })
+    );
+
+    // Security middleware with CORS-friendly settings
+    this.app.use(
+      helmet({
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+        crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
       })
     );
 
