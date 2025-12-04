@@ -23,7 +23,6 @@ export class BookingPOService {
 
       const purchaseOrders: any[] = [];
 
-      // 1. Generate PO for Catering Vendor (if exists)
       if (booking.cateringServiceVendor) {
         const cateringVendor = booking.cateringServiceVendor;
 
@@ -66,7 +65,7 @@ export class BookingPOService {
               venueId: booking.venueId.toString(),
               vendorType: "service",
               vendorDetails: {
-                name: service.vendor.name,
+                name: service.vendor.name || "vendor name",
                 email: service.vendor.email,
                 phone: service.vendor.phone,
                 bankDetails: service.vendor.bankDetails,
@@ -172,7 +171,7 @@ export class BookingPOService {
           venueId: booking.venueId.toString(),
           vendorType: "service",
           vendorDetails: {
-            name: service.vendor.name,
+            name: service.vendor.name || "vendor name",
             email: service.vendor.email,
             phone: service.vendor.phone,
             bankDetails: service.vendor.bankDetails,
