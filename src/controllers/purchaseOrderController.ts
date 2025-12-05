@@ -406,4 +406,32 @@ export class PurchaseOrderController {
       });
     }
   }
+
+  /**
+   * Delete orphaned POs (POs whose bookings no longer exist)
+   * DELETE /api/purchase-orders/cleanup/orphaned
+   */
+  static async deleteOrphanedPOs(req: Request, res: Response): Promise<void> {
+    try {
+      // Verify user is authenticated
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const result = await PurchaseOrderService.deleteOrphanedPOs();
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: `${result.deletedCount} orphaned purchase order(s) deleted successfully`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting orphaned POs:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to delete orphaned purchase orders",
+      });
+    }
+  }
 }

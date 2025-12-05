@@ -133,4 +133,15 @@ purchaseOrderRoutes.post(
   PurchaseOrderController.generatePOsForBooking
 );
 
+/**
+ * Delete orphaned POs (POs whose bookings no longer exist)
+ * DELETE /api/purchase-orders/cleanup/orphaned
+ * Required: booking.delete permission
+ */
+purchaseOrderRoutes.delete(
+  "/cleanup/orphaned",
+  // requirePerm(ROLE_PERMS.BOOKING_DELETE),
+  PurchaseOrderController.deleteOrphanedPOs
+);
+
 export default purchaseOrderRoutes;

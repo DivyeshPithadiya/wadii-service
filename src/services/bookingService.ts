@@ -49,7 +49,7 @@ export class BookingService {
       console.log("Population complete. Returning booking.");
       return booking;
     } catch (error: any) {
-      console.error("❌ Error in BookingService.createBooking:", error);
+      console.error("Error in BookingService.createBooking:", error);
       throw new Error(`Error creating booking: ${error.message}`);
     }
   }
@@ -341,7 +341,7 @@ export class BookingService {
 
       if (associatedPOs > 0) {
         console.warn(
-          `⚠️  Soft deleting booking ${bookingId} which has ${associatedPOs} associated Purchase Order(s). POs will remain but no new payments can be made.`
+          ` Soft deleting booking ${bookingId} which has ${associatedPOs} associated Purchase Order(s). POs will remain but no new payments can be made.`
         );
       }
 
@@ -352,7 +352,7 @@ export class BookingService {
 
       if (transactionCount > 0) {
         console.warn(
-          `⚠️  Soft deleting booking ${bookingId} which has ${transactionCount} transaction(s). Transactions will remain for audit purposes.`
+          ` Soft deleting booking ${bookingId} which has ${transactionCount} transaction(s). Transactions will remain for audit purposes.`
         );
       }
 

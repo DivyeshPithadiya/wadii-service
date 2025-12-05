@@ -116,6 +116,11 @@ export class PurchaseOrderService {
         throw new Error("Purchase Order not found");
       }
 
+      // Check if booking exists
+      if (!po.bookingId) {
+        throw new Error("Purchase Order's associated booking no longer exists");
+      }
+
       // Fetch related transactions
       const transactions = await Transaction.find({
         purchaseOrderId: oid(poId),
@@ -196,9 +201,12 @@ export class PurchaseOrderService {
         PurchaseOrder.countDocuments(query),
       ]);
 
+      // Filter out POs where booking doesn't exist
+      const validPos = pos.filter((po) => po.bookingId !== null);
+
       // Fetch transaction trails for each PO
       const posWithTransactions = await Promise.all(
-        pos.map(async (po) => {
+        validPos.map(async (po) => {
           const transactions = await Transaction.find({
             purchaseOrderId: po._id,
             status: "success",
@@ -480,6 +488,41 @@ export class PurchaseOrderService {
       return pos;
     } catch (error: any) {
       throw new Error(`Error fetching POs by booking: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete orphaned POs (POs whose bookings no longer exist)
+   */
+  static async deleteOrphanedPOs(): Promise<{ deletedCount: number; deletedPOs: string[] }> {
+    try {
+      // Get all POs
+      const allPOs = await PurchaseOrder.find().select("_id bookingId poNumber").lean();
+
+      const orphanedPOs: string[] = [];
+      const deletedPONumbers: string[] = [];
+
+      // Check each PO's booking
+      for (const po of allPOs) {
+        const bookingExists = await Booking.exists({ _id: po.bookingId });
+
+        if (!bookingExists) {
+          orphanedPOs.push(po._id.toString());
+          deletedPONumbers.push(po.poNumber);
+        }
+      }
+
+      // Delete orphaned POs
+      if (orphanedPOs.length > 0) {
+        await PurchaseOrder.deleteMany({ _id: { $in: orphanedPOs } });
+      }
+
+      return {
+        deletedCount: orphanedPOs.length,
+        deletedPOs: deletedPONumbers,
+      };
+    } catch (error: any) {
+      throw new Error(`Error deleting orphaned POs: ${error.message}`);
     }
   }
 }

@@ -7,16 +7,18 @@ async function updateOwnerPermissions() {
     // Connect to database
     const database = Database.getInstance();
     await database.connect();
-    console.log("✅ Connected to database");
+    console.log(" Connected to database");
 
-    console.log("\n🔄 UPDATING OWNER PERMISSIONS\n");
+    console.log("\n UPDATING OWNER PERMISSIONS\n");
 
     // Get current owner role assignments
     const ownerRoles = await UserBusinessRole.find({ role: "owner" }).lean();
     console.log(`Found ${ownerRoles.length} owner role assignments`);
 
     if (ownerRoles.length === 0) {
-      console.log("❌ No owner roles found. Make sure you have owner users with business assignments.");
+      console.log(
+        " No owner roles found. Make sure you have owner users with business assignments."
+      );
       return;
     }
 

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { BookingService } from "../services/bookingService";
 import { TransactionService } from "../services/transactionService";
+import { BookingPOService } from "../services/bookingPOService";
 import {
   CreateBookingReq,
   GetBookingReq,
@@ -98,6 +99,19 @@ export class BookingController {
           console.error("⚠️ Warning: Failed to create initial transaction:", txnError.message);
           // Don't fail the booking creation if transaction creation fails
         }
+      }
+
+      // Auto-generate POs for the booking
+      console.log("Auto-generating POs for booking...");
+      try {
+        const generatedPOs = await BookingPOService.generatePOsForBooking(
+          booking._id.toString(),
+          req.user.userId
+        );
+        console.log(`✅ ${generatedPOs.length} PO(s) auto-generated successfully`);
+      } catch (poError: any) {
+        console.error("⚠️ Warning: Failed to auto-generate POs:", poError.message);
+        // Don't fail the booking creation if PO generation fails
       }
 
       res.status(201).json({

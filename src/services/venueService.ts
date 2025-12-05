@@ -162,13 +162,13 @@ export class VenueService {
       }).lean();
 
       if (!business) {
-        console.error("[VALIDATION] ❌ Business not found", {
+        console.error("[VALIDATION] Business not found", {
           businessId: venueData.businessId,
         });
         throw new Error("Business not found");
       }
 
-      console.log("[VALIDATION] ✅ Business found:", {
+      console.log("[VALIDATION]  Business found:", {
         businessId: business._id,
         businessName: business.businessName,
       });
@@ -191,19 +191,19 @@ export class VenueService {
         }).lean();
 
         if (!hasAccess) {
-          console.error("[AUTH] ❌ Permission denied for user", {
+          console.error("[AUTH] Permission denied for user", {
             userId,
             businessId: venueData.businessId,
           });
           throw new Error("Permission denied");
         }
 
-        console.log("[AUTH] ✅ Scoped access granted via business role:", {
+        console.log("[AUTH]  Scoped access granted via business role:", {
           role: hasAccess.role,
           permissions: hasAccess.permissions,
         });
       } else {
-        console.log("[AUTH] ✅ Global VENUE_CREATE permission granted.");
+        console.log("[AUTH]  Global VENUE_CREATE permission granted.");
       }
 
       // ===== DATA PREPARATION PHASE =====
@@ -233,7 +233,7 @@ export class VenueService {
       // ===== DATABASE SAVE PHASE =====
       console.log("[DB] Saving venue to database...");
       await venue.save();
-      console.log("[DB] ✅ Venue saved successfully", { venueId: venue._id });
+      console.log("[DB]  Venue saved successfully", { venueId: venue._id });
 
       console.log("========== VENUE CREATION COMPLETE ==========");
       return venue;
@@ -706,11 +706,11 @@ export class VenueService {
 
     const venue = await Venue.findOne({ _id: oid(venueId) });
     if (!venue) {
-      console.error("[VALIDATION] ❌ Venue not found", { venueId });
+      console.error("[VALIDATION] Venue not found", { venueId });
       throw new Error("Venue not found");
     }
 
-    console.log("[VALIDATION] ✅ Venue found:", {
+    console.log("[VALIDATION]  Venue found:", {
       venueId: venue._id,
       venueName: venue.venueName,
       currentCateringVendors: venue.cateringServiceVendor?.length || 0,
@@ -728,12 +728,12 @@ export class VenueService {
         ],
       }).lean();
       if (!hasAccess) {
-        console.error("[AUTH] ❌ Permission denied", { userId, venueId });
+        console.error("[AUTH] Permission denied", { userId, venueId });
         throw new Error("Permission denied");
       }
-      console.log("[AUTH] ✅ Scoped permission granted");
+      console.log("[AUTH]  Scoped permission granted");
     } else {
-      console.log("[AUTH] ✅ Global VENUE_UPDATE permission granted");
+      console.log("[AUTH]  Global VENUE_UPDATE permission granted");
     }
 
     if (!venue.cateringServiceVendor) venue.cateringServiceVendor = [];
@@ -748,11 +748,11 @@ export class VenueService {
 
     venue.cateringServiceVendor.push(vendorData);
     venue.updatedBy = updatedBy;
-    venue.markModified('cateringServiceVendor');
+    venue.markModified("cateringServiceVendor");
 
     console.log("[DB] Saving venue with new catering vendor...");
     await venue.save();
-    console.log("[DB] ✅ Venue saved successfully");
+    console.log("[DB]  Venue saved successfully");
 
     // Fetch the updated venue to ensure all fields are populated
     console.log("[DB] Fetching updated venue...");
@@ -864,7 +864,7 @@ export class VenueService {
         "[VenueService] Fetching all venues"
       );
 
-      // ✅ Developer or Super Admin → return all venues with business info
+      //  Developer or Super Admin → return all venues with business info
       if (["developer", "superadmin"].includes(userRole?.role || "")) {
         logger.debug("[VenueService] Developer or superadmin access detected");
 
@@ -897,7 +897,7 @@ export class VenueService {
         return venues;
       }
 
-      // ✅ Normal users: get businesses they are assigned to
+      //  Normal users: get businesses they are assigned to
       logger.debug(
         "[VenueService] Non-developer role, fetching assigned businesses"
       );

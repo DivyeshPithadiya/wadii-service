@@ -33,7 +33,7 @@ const hasPermission = (role: string, permission: string): boolean => {
 
 testScenarios.forEach(({ role, permission, expected }) => {
   const result = hasPermission(role, permission);
-  const status = result === expected ? "✅" : "❌";
+  const status = result === expected ? "yes" : "no";
   console.log(`   ${status} ${role} -> ${permission}: ${result} (expected: ${expected})`);
 });
 

@@ -153,6 +153,11 @@ export class ReportService {
         // Get the booking for event date
         const booking = bookings.find((b) => b._id.toString() === po.bookingId.toString());
 
+        // Skip PO if booking doesn't exist
+        if (!booking) {
+          continue;
+        }
+
         // Calculate amount due (balance amount)
         const amountDue = po.balanceAmount || 0;
 
@@ -163,7 +168,7 @@ export class ReportService {
             serviceName: po.lineItems.map((item) => item.description).join(", "),
             vendorName: po.vendorDetails.name,
             amountDue: amountDue,
-            eventDate: booking?.eventStartDateTime || po.issueDate,
+            eventDate: booking.eventStartDateTime,
             // Removed bankDetails from cash ledger report
             poNumber: po.poNumber,
             poTotalAmount: po.totalAmount,

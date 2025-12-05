@@ -49,7 +49,9 @@ async function migrateServicesToObjectId() {
               needsUpdate = true;
               console.log(`  ✓ Lead ${lead._id}: "${serviceName}" -> ${serviceId}`);
             } else {
-              console.log(`  ⚠️  Lead ${lead._id}: Service "${serviceName}" not found in Service collection`);
+              console.log(
+                `    Lead ${lead._id}: Service "${serviceName}" not found in Service collection`
+              );
             }
           }
         }
@@ -85,7 +87,9 @@ async function migrateServicesToObjectId() {
               needsUpdate = true;
               console.log(`  ✓ Booking ${booking._id}: "${serviceName}" -> ${serviceId}`);
             } else {
-              console.log(`  ⚠️  Booking ${booking._id}: Service "${serviceName}" not found in Service collection`);
+              console.log(
+                `    Booking ${booking._id}: Service "${serviceName}" not found in Service collection`
+              );
             }
           }
         }
