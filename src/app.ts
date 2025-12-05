@@ -70,7 +70,7 @@ class App {
     if (this.envConfig.NODE_ENV === "development") {
       this.app.use((req, res, next) => {
         console.log(
-          `🌐 ${req.method} ${req.path} - ${new Date().toISOString()}`
+          "🌐 ${req.method} ${req.path} - ${new Date().toISOString()}"
         );
         next();
       });
@@ -80,7 +80,7 @@ class App {
   /**
    * Initialize routes
    */
-  private   initializeRoutes(): void {
+  private initializeRoutes(): void {
     // API routes
     this.app.use("/api", routes);
 
@@ -116,11 +116,11 @@ class App {
 
     this.app.listen(port, () => {
       console.log("\n🚀 =======================================");
-      console.log(`🎯 Banquet Booking API Server Running!`);
-      console.log(`📍 Environment: ${this.envConfig.NODE_ENV}`);
-      console.log(`🌐 Port: ${port}`);
-      console.log(`📖 API Documentation: http://localhost:${port}/api/docs`);
-      console.log(`💚 Health Check: http://localhost:${port}/api/health`);
+      console.log("🎯 Banquet Booking API Server Running!");
+      console.log("📍 Environment: ${this.envConfig.NODE_ENV}");
+      console.log("🌐 Port: ${port}");
+      console.log("📖 API Documentation: http://localhost:${port}/api/docs");
+      console.log("💚 Health Check: http://localhost:${port}/api/health");
       console.log("🚀 =======================================\n");
     });
 
@@ -137,10 +137,12 @@ class App {
   }
 }
 
-// Initialize and start the application
+// Initialize the application
 const app = new App();
-app.start();
+
+// Only start the server if not in serverless environment (Vercel)
+if (process.env.VERCEL !== "1" && !process.env.LAMBDA_TASK_ROOT) {
+  app.start();
+}
 
 export default app;
-
-
