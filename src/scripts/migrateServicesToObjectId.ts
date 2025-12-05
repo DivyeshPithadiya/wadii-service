@@ -14,7 +14,9 @@ import { Service } from "../models/Service";
 
 async function migrateServicesToObjectId() {
   try {
-    console.log("🚀 Starting migration: Converting service strings to ObjectIds...\n");
+    console.log(
+      "🚀 Starting migration: Converting service strings to ObjectIds...\n"
+    );
 
     // Step 1: Get all services and create a name -> ID mapping
     const services = await Service.find({});
@@ -39,7 +41,7 @@ async function migrateServicesToObjectId() {
       if (lead.services && lead.services.length > 0) {
         for (let i = 0; i < lead.services.length; i++) {
           const serviceItem = lead.services[i];
-          const serviceName = (serviceItem.service as any) as string;
+          const serviceName = serviceItem.service as any as string;
 
           if (typeof serviceName === "string") {
             const serviceId = serviceMap.get(serviceName.toLowerCase().trim());
@@ -47,7 +49,9 @@ async function migrateServicesToObjectId() {
             if (serviceId) {
               lead.services[i].service = serviceId as any;
               needsUpdate = true;
-              console.log(`  ✓ Lead ${lead._id}: "${serviceName}" -> ${serviceId}`);
+              console.log(
+                `  ✓ Lead ${lead._id}: "${serviceName}" -> ${serviceId}`
+              );
             } else {
               console.log(
                 `    Lead ${lead._id}: Service "${serviceName}" not found in Service collection`
@@ -63,12 +67,16 @@ async function migrateServicesToObjectId() {
       }
     }
 
-    console.log(`✅ Updated ${leadsUpdated} leads\n`);
+    console.log(` Updated ${leadsUpdated} leads\n`);
 
     // Step 3: Migrate Bookings
     console.log("🔄 Migrating Bookings...");
-    const bookings = await Booking.find({ "services.service": { $type: "string" } });
-    console.log(`Found ${bookings.length} bookings with string service references`);
+    const bookings = await Booking.find({
+      "services.service": { $type: "string" },
+    });
+    console.log(
+      `Found ${bookings.length} bookings with string service references`
+    );
 
     let bookingsUpdated = 0;
     for (const booking of bookings) {
@@ -77,7 +85,7 @@ async function migrateServicesToObjectId() {
       if (booking.services && booking.services.length > 0) {
         for (let i = 0; i < booking.services.length; i++) {
           const serviceItem = booking.services[i];
-          const serviceName = (serviceItem.service as any) as string;
+          const serviceName = serviceItem.service as any as string;
 
           if (typeof serviceName === "string") {
             const serviceId = serviceMap.get(serviceName.toLowerCase().trim());
@@ -85,7 +93,9 @@ async function migrateServicesToObjectId() {
             if (serviceId) {
               booking.services[i].service = serviceId as any;
               needsUpdate = true;
-              console.log(`  ✓ Booking ${booking._id}: "${serviceName}" -> ${serviceId}`);
+              console.log(
+                `  ✓ Booking ${booking._id}: "${serviceName}" -> ${serviceId}`
+              );
             } else {
               console.log(
                 `    Booking ${booking._id}: Service "${serviceName}" not found in Service collection`
@@ -101,17 +111,18 @@ async function migrateServicesToObjectId() {
       }
     }
 
-    console.log(`✅ Updated ${bookingsUpdated} bookings\n`);
+    console.log(` Updated ${bookingsUpdated} bookings\n`);
 
     // Summary
     console.log("🎉 Migration completed successfully!");
     console.log(`Summary:`);
     console.log(`  - Leads updated: ${leadsUpdated}`);
     console.log(`  - Bookings updated: ${bookingsUpdated}`);
-    console.log(`  - Total documents updated: ${leadsUpdated + bookingsUpdated}`);
-
+    console.log(
+      `  - Total documents updated: ${leadsUpdated + bookingsUpdated}`
+    );
   } catch (error: any) {
-    console.error("❌ Migration failed:", error.message);
+    console.error("Migration failed:", error.message);
     console.error(error.stack);
     throw error;
   }
@@ -119,20 +130,21 @@ async function migrateServicesToObjectId() {
 
 // Run migration if executed directly
 if (require.main === module) {
-  const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/wadii";
+  const MONGODB_URI =
+    process.env.MONGODB_URI || "mongodb://localhost:27017/wadii";
 
   mongoose
     .connect(MONGODB_URI)
     .then(() => {
-      console.log("✅ Connected to MongoDB\n");
+      console.log(" Connected to MongoDB\n");
       return migrateServicesToObjectId();
     })
     .then(() => {
-      console.log("\n✅ Migration script completed");
+      console.log("\n Migration script completed");
       process.exit(0);
     })
     .catch((error) => {
-      console.error("\n❌ Migration script failed:", error);
+      console.error("\n Migration script failed:", error);
       process.exit(1);
     });
 }

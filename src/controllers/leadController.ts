@@ -155,7 +155,7 @@ export class LeadController {
       const lead = await LeadService.updateLead(leadId, updateData);
 
       if (!lead) {
-        console.log("⚠️  Lead not found for ID:", leadId);
+        console.log("  Lead not found for ID:", leadId);
         res.status(404).json({ success: false, message: "Lead not found" });
         return;
       }
