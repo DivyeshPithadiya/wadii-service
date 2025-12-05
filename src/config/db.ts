@@ -14,9 +14,11 @@ class Database {
 
   public async connect(): Promise<void> {
     try {
-      const mongoURI =
-        process.env.MONGO_URI ||
-        "mongodb+srv://divyeshpithadiya:8aKA8RWQRN3xsZg@techsolution.pidwsxo.mongodb.net/?retryWrites=true&w=majority&appName=TechSolution"; 
+      const mongoURI = process.env.MONGO_URI;
+
+      if (!mongoURI) {
+        throw new Error("MONGO_URI environment variable is not defined");
+      }
 
       await mongoose.connect(mongoURI);
 
