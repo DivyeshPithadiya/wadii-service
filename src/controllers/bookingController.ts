@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { BookingService } from "../services/bookingService";
 import { TransactionService } from "../services/transactionService";
@@ -15,7 +15,6 @@ import {
   BookingQueryFilters,
 } from "../types/booking-request-types";
 import { parseNumberParam } from "../utils/helper";
-import { success } from "zod";
 
 const oid = (id: string) => new Types.ObjectId(id);
 
