@@ -10,8 +10,20 @@ import { errorHandler, notFoundHandler } from "../src/middlewares/errorHandler";
 const app = express();
 const envConfig = EnvironmentConfig.getInstance().config;
 
-// Initialize database connection (async, but Vercel will handle it)
-Database.getInstance().connect().catch(console.error);
+// Initialize database connection (lazy initialization for serverless)
+let dbInitialized = false;
+const initDB = async () => {
+  if (!dbInitialized) {
+    await Database.getInstance().connect().catch(console.error);
+    dbInitialized = true;
+  }
+};
+
+// Initialize DB on first request
+app.use(async (_req, _res, next) => {
+  await initDB();
+  next();
+});
 
 // CORS configuration
 app.use(
@@ -64,5 +76,5 @@ app.get("/", (req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Export for Vercel serverless
+// Export handler for Vercel serverless
 export default app;
