@@ -422,7 +422,7 @@ export class BookingController {
   }
 
   /**
-   * Delete booking (hard delete)
+   * Delete booking (soft delete)
    */
   static async deleteBooking(
     req: DeleteBookingReq,
@@ -436,7 +436,10 @@ export class BookingController {
 
       const { bookingId } = req.params;
 
-      const booking = await BookingService.deleteBooking(bookingId);
+      const booking = await BookingService.deleteBooking(
+        bookingId,
+        req.user.userId
+      );
 
       if (!booking) {
         res.status(404).json({ success: false, message: "Booking not found" });
@@ -445,7 +448,68 @@ export class BookingController {
 
       res.status(200).json({
         success: true,
-        message: "Booking deleted successfully",
+        message: "Booking soft deleted successfully",
+        data: booking,
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Get deleted bookings (admin/dev only)
+   */
+  static async getDeletedBookings(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { limit, skip } = req.query;
+
+      const result = await BookingService.getDeletedBookings({
+        limit: limit ? parseInt(limit as string) : undefined,
+        skip: skip ? parseInt(skip as string) : undefined,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result.bookings,
+        pagination: {
+          total: result.total,
+          limit: limit ? parseInt(limit as string) : 50,
+          skip: skip ? parseInt(skip as string) : 0,
+        },
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Restore a soft-deleted booking
+   */
+  static async restoreBooking(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { bookingId } = req.params;
+
+      const booking = await BookingService.restoreBooking(bookingId);
+
+      res.status(200).json({
+        success: true,
+        message: "Booking restored successfully",
         data: booking,
       });
     } catch (error: any) {

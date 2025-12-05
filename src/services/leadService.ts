@@ -1,10 +1,7 @@
 import { Lead } from "../models/Lead";
 import { ILead } from "../types/lead-types";
 import { oid } from "../utils/helper";
-
-
-
-
+import BlackoutDayService from "./blackoutDayService";
 
 export class LeadService {
   /**
@@ -12,6 +9,22 @@ export class LeadService {
    */
   async createLead(leadData: Partial<ILead>): Promise<ILead> {
     try {
+      // Check for blackout day conflicts
+      if (leadData.venueId && leadData.eventStartDateTime && leadData.eventEndDateTime) {
+        const conflictResult = await BlackoutDayService.checkBlackoutConflict(
+          leadData.venueId.toString(),
+          leadData.eventStartDateTime,
+          leadData.eventEndDateTime
+        );
+
+        if (conflictResult.hasConflict) {
+          const conflictDates = conflictResult.conflictingDays?.map(bd =>
+            `${bd.title} (${new Date(bd.startDate).toLocaleDateString()} - ${new Date(bd.endDate).toLocaleDateString()})`
+          ).join(", ");
+          throw new Error(`Cannot create lead. The selected dates conflict with blackout days: ${conflictDates}`);
+        }
+      }
+
       const lead = new Lead(leadData);
       await lead.save();
 

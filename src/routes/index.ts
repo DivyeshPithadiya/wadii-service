@@ -8,6 +8,7 @@ import bookingRoutes from "./bookingRoutes";
 import transactionRoutes from "./transactionRoutes";
 import purchaseOrderRoutes from "./purchaseOrderRoutes";
 import reportRoutes from "./reportRoutes";
+import blackoutDayRoutes from "./blackoutDayRoutes";
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use("/bookings", bookingRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/purchase-orders", purchaseOrderRoutes);
 router.use("/reports", reportRoutes);
+router.use("/blackout-days", blackoutDayRoutes);
 
 export default router;

@@ -65,6 +65,10 @@ export interface IBooking extends Document {
   confirmedAt?: Date | null;
   cancelledAt?: Date | null;
   cancellationReason?: string;
+  // Soft Delete fields
+  isDeleted: boolean;
+  deletedAt?: Date | null;
+  deletedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,7 +1,13 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Query } from "mongoose";
 import { IBooking } from "../types/booking-types";
 
-const bookingSchema = new Schema<IBooking>(
+// Define query helpers interface
+interface BookingQueryHelpers {
+  excludeDeleted(): Query<any, IBooking, BookingQueryHelpers> & BookingQueryHelpers;
+  onlyDeleted(): Query<any, IBooking, BookingQueryHelpers> & BookingQueryHelpers;
+}
+
+const bookingSchema = new Schema<IBooking, mongoose.Model<IBooking, BookingQueryHelpers>, {}, BookingQueryHelpers>(
   {
     venueId: {
       type: Schema.Types.ObjectId,
@@ -272,6 +278,21 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       default: "",
     },
+    // Soft Delete fields
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+    deletedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -294,6 +315,18 @@ bookingSchema.index({ "payment.paymentStatus": 1 });
 bookingSchema.index({ venueId: 1, bookingStatus: 1 });
 bookingSchema.index({ venueId: 1, eventStartDateTime: 1 });
 bookingSchema.index({ venueId: 1, "payment.paymentStatus": 1 });
+bookingSchema.index({ isDeleted: 1, createdAt: -1 });
+bookingSchema.index({ venueId: 1, isDeleted: 1 });
+
+// Query helper to exclude deleted bookings by default
+bookingSchema.query.excludeDeleted = function(this: Query<any, IBooking, BookingQueryHelpers> & BookingQueryHelpers) {
+  return this.where({ isDeleted: false });
+};
+
+// Query helper to include only deleted bookings
+bookingSchema.query.onlyDeleted = function(this: Query<any, IBooking, BookingQueryHelpers> & BookingQueryHelpers) {
+  return this.where({ isDeleted: true });
+};
 
 // Pre-save hook for payment status
 bookingSchema.pre("save", function (next) {

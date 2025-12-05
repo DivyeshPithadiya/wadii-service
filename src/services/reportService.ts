@@ -164,7 +164,7 @@ export class ReportService {
             vendorName: po.vendorDetails.name,
             amountDue: amountDue,
             eventDate: booking?.eventStartDateTime || po.issueDate,
-            bankDetails: po.vendorDetails.bankDetails,
+            // Removed bankDetails from cash ledger report
             poNumber: po.poNumber,
             poTotalAmount: po.totalAmount,
             poPaidAmount: po.paidAmount,
@@ -253,18 +253,30 @@ export class ReportService {
     const bookings = await Booking.find(query);
     const bookingIds = bookings.map((b) => b._id);
 
-    // Fetch all successful transactions for these bookings
-    const transactions = await Transaction.find({
+    // Fetch all successful inbound transactions (income) for these bookings
+    const inboundTransactions = await Transaction.find({
       bookingId: { $in: bookingIds },
       status: "success",
+      direction: "inbound",
       paidAt: {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       },
     });
 
-    // Calculate venue charges (booking revenue from transactions)
-    const venueIncome = transactions.reduce(
+    // Fetch all successful outbound transactions (expenditure) for these bookings
+    const outboundTransactions = await Transaction.find({
+      bookingId: { $in: bookingIds },
+      status: "success",
+      direction: "outbound",
+      paidAt: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    }).populate("purchaseOrderId");
+
+    // Calculate venue charges (booking revenue from inbound transactions)
+    const venueIncome = inboundTransactions.reduce(
       (sum, txn) => sum + txn.amount,
       0
     );
@@ -281,36 +293,38 @@ export class ReportService {
       },
     ];
 
-    // Group services
+    // Group outbound transactions by vendor type or service
     const serviceMap = new Map<
       string,
       { income: number; expenditure: number; count: number }
     >();
 
-    for (const booking of bookings) {
-      if (booking.services && booking.services.length > 0) {
-        for (const service of booking.services) {
-          const serviceName = service.service;
-          const servicePrice = service.price || 0;
+    for (const txn of outboundTransactions) {
+      let serviceName = "Vendor Payments";
 
-          if (!serviceMap.has(serviceName)) {
-            serviceMap.set(serviceName, {
-              income: 0,
-              expenditure: 0,
-              count: 0,
-            });
-          }
-
-          const serviceData = serviceMap.get(serviceName)!;
-          // If vendor exists, it's an expenditure; otherwise, it's income
-          if (service.vendor) {
-            serviceData.expenditure += servicePrice;
-          } else {
-            serviceData.income += servicePrice;
-          }
-          serviceData.count += 1;
+      // Try to get service name from purchase order
+      if (txn.purchaseOrderId && typeof txn.purchaseOrderId === "object") {
+        const po = txn.purchaseOrderId as any;
+        if (po.lineItems && po.lineItems.length > 0) {
+          serviceName = po.lineItems[0].description || po.vendorType || "Vendor Payments";
+        } else if (po.vendorType) {
+          serviceName = po.vendorType.charAt(0).toUpperCase() + po.vendorType.slice(1);
         }
+      } else if (txn.vendorType) {
+        serviceName = txn.vendorType.charAt(0).toUpperCase() + txn.vendorType.slice(1);
       }
+
+      if (!serviceMap.has(serviceName)) {
+        serviceMap.set(serviceName, {
+          income: 0,
+          expenditure: 0,
+          count: 0,
+        });
+      }
+
+      const serviceData = serviceMap.get(serviceName)!;
+      serviceData.expenditure += txn.amount;
+      serviceData.count += 1;
     }
 
     // Convert map to breakdown items
@@ -339,23 +353,45 @@ export class ReportService {
     const bookings = await Booking.find(query);
     const bookingIds = bookings.map((b) => b._id);
 
-    // Fetch all successful transactions for these bookings
-    const transactions = await Transaction.find({
+    // Fetch all successful inbound transactions (income)
+    const inboundTransactions = await Transaction.find({
       bookingId: { $in: bookingIds },
       status: "success",
+      direction: "inbound",
       paidAt: {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       },
     });
 
-    // Group transactions by booking
-    const transactionsByBooking = new Map<string, number>();
-    transactions.forEach((txn) => {
+    // Fetch all successful outbound transactions (expenditure)
+    const outboundTransactions = await Transaction.find({
+      bookingId: { $in: bookingIds },
+      status: "success",
+      direction: "outbound",
+      paidAt: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    });
+
+    // Group inbound transactions by booking
+    const incomeByBooking = new Map<string, number>();
+    inboundTransactions.forEach((txn) => {
       const bookingId = txn.bookingId.toString();
-      transactionsByBooking.set(
+      incomeByBooking.set(
         bookingId,
-        (transactionsByBooking.get(bookingId) || 0) + txn.amount
+        (incomeByBooking.get(bookingId) || 0) + txn.amount
+      );
+    });
+
+    // Group outbound transactions by booking
+    const expenditureByBooking = new Map<string, number>();
+    outboundTransactions.forEach((txn) => {
+      const bookingId = txn.bookingId.toString();
+      expenditureByBooking.set(
+        bookingId,
+        (expenditureByBooking.get(bookingId) || 0) + txn.amount
       );
     });
 
@@ -367,16 +403,8 @@ export class ReportService {
     for (const booking of bookings) {
       const occasionType = booking.occasionType;
       const bookingId = booking._id.toString();
-      const income = transactionsByBooking.get(bookingId) || 0;
-      let expenditure = 0;
-
-      // Calculate expenditure from services
-      if (booking.services && booking.services.length > 0) {
-        expenditure = booking.services.reduce(
-          (sum, service) => sum + (service.price || 0),
-          0
-        );
-      }
+      const income = incomeByBooking.get(bookingId) || 0;
+      const expenditure = expenditureByBooking.get(bookingId) || 0;
 
       if (!occasionMap.has(occasionType)) {
         occasionMap.set(occasionType, {
@@ -418,23 +446,45 @@ export class ReportService {
     const bookings = await Booking.find(query);
     const bookingIds = bookings.map((b) => b._id);
 
-    // Fetch all successful transactions for these bookings
-    const transactions = await Transaction.find({
+    // Fetch all successful inbound transactions (income)
+    const inboundTransactions = await Transaction.find({
       bookingId: { $in: bookingIds },
       status: "success",
+      direction: "inbound",
       paidAt: {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       },
     });
 
-    // Group transactions by booking
-    const transactionsByBooking = new Map<string, number>();
-    transactions.forEach((txn) => {
+    // Fetch all successful outbound transactions (expenditure)
+    const outboundTransactions = await Transaction.find({
+      bookingId: { $in: bookingIds },
+      status: "success",
+      direction: "outbound",
+      paidAt: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    });
+
+    // Group inbound transactions by booking
+    const incomeByBooking = new Map<string, number>();
+    inboundTransactions.forEach((txn) => {
       const bookingId = txn.bookingId.toString();
-      transactionsByBooking.set(
+      incomeByBooking.set(
         bookingId,
-        (transactionsByBooking.get(bookingId) || 0) + txn.amount
+        (incomeByBooking.get(bookingId) || 0) + txn.amount
+      );
+    });
+
+    // Group outbound transactions by booking
+    const expenditureByBooking = new Map<string, number>();
+    outboundTransactions.forEach((txn) => {
+      const bookingId = txn.bookingId.toString();
+      expenditureByBooking.set(
+        bookingId,
+        (expenditureByBooking.get(bookingId) || 0) + txn.amount
       );
     });
 
@@ -450,16 +500,8 @@ export class ReportService {
       ).padStart(2, "0")}`;
 
       const bookingId = booking._id.toString();
-      const income = transactionsByBooking.get(bookingId) || 0;
-      let expenditure = 0;
-
-      // Calculate expenditure from services
-      if (booking.services && booking.services.length > 0) {
-        expenditure = booking.services.reduce(
-          (sum, service) => sum + (service.price || 0),
-          0
-        );
-      }
+      const income = incomeByBooking.get(bookingId) || 0;
+      const expenditure = expenditureByBooking.get(bookingId) || 0;
 
       if (!monthMap.has(monthKey)) {
         monthMap.set(monthKey, {

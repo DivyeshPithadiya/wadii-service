@@ -30,7 +30,7 @@ export const validateRequest = (schema: {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const formattedErrors = error.errors.map((err) => ({
+        const formattedErrors = error.issues.map((err: any) => ({
           field: err.path.join("."),
           message: err.message,
         }));
@@ -43,6 +43,7 @@ export const validateRequest = (schema: {
       }
 
       // Handle other errors
+      console.error("Validation middleware error:", error);
       return res.status(500).json({
         success: false,
         message: "Validation error",

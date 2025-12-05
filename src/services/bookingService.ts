@@ -2,6 +2,7 @@ import { Booking } from "../models/Booking";
 import { Transaction } from "../models/Transaction";
 import { IBooking } from "../types/booking-types";
 import { Types } from "mongoose";
+import BlackoutDayService from "./blackoutDayService";
 
 const oid = (id: string) => new Types.ObjectId(id);
 
@@ -13,6 +14,22 @@ export class BookingService {
     try {
       console.log("---- BookingService.createBooking ----");
       console.log("Booking Data:", JSON.stringify(bookingData, null, 2));
+
+      // Check for blackout day conflicts
+      if (bookingData.venueId && bookingData.eventStartDateTime && bookingData.eventEndDateTime) {
+        const conflictResult = await BlackoutDayService.checkBlackoutConflict(
+          bookingData.venueId.toString(),
+          bookingData.eventStartDateTime,
+          bookingData.eventEndDateTime
+        );
+
+        if (conflictResult.hasConflict) {
+          const conflictDates = conflictResult.conflictingDays?.map(bd =>
+            `${bd.title} (${new Date(bd.startDate).toLocaleDateString()} - ${new Date(bd.endDate).toLocaleDateString()})`
+          ).join(", ");
+          throw new Error(`Cannot create booking. The selected dates conflict with blackout days: ${conflictDates}`);
+        }
+      }
 
       const booking = new Booking(bookingData);
       console.log("Booking instance created, saving to database...");
@@ -42,7 +59,10 @@ export class BookingService {
    */
   static async getBookingById(bookingId: string): Promise<any> {
     try {
-      const booking = await Booking.findById(oid(bookingId))
+      const booking = await Booking.findOne({
+        _id: oid(bookingId),
+        isDeleted: false,
+      })
         .populate("venueId", "venueName venueType address")
         .populate("leadId", "clientName contactNo email leadStatus")
         .populate("createdBy", "_id email firstName lastName")
@@ -88,7 +108,7 @@ export class BookingService {
     try {
       const query: any = {
         venueId,
-        bookingStatus: { $ne: "cancelled" }, // Exclude soft-deleted bookings
+        isDeleted: false, // Exclude soft-deleted bookings
       };
 
       if (filters?.bookingStatus) {
@@ -152,8 +172,8 @@ export class BookingService {
     updateData: Partial<IBooking>
   ): Promise<IBooking | null> {
     try {
-      const booking = await Booking.findByIdAndUpdate(
-        oid(bookingId),
+      const booking = await Booking.findOneAndUpdate(
+        { _id: oid(bookingId), isDeleted: false },
         {
           ...updateData,
           updatedAt: new Date(),
@@ -171,7 +191,7 @@ export class BookingService {
   }
 
   /**
-   * Soft delete booking (cancel)
+   * Cancel booking (update status to cancelled)
    */
   static async softDeleteBooking(
     bookingId: string,
@@ -179,8 +199,8 @@ export class BookingService {
     userId?: string
   ): Promise<IBooking | null> {
     try {
-      const booking = await Booking.findByIdAndUpdate(
-        oid(bookingId),
+      const booking = await Booking.findOneAndUpdate(
+        { _id: oid(bookingId), isDeleted: false },
         {
           bookingStatus: "cancelled",
           cancelledAt: new Date(),
@@ -207,8 +227,8 @@ export class BookingService {
     userId?: string
   ): Promise<IBooking | null> {
     try {
-      const booking = await Booking.findByIdAndUpdate(
-        oid(bookingId),
+      const booking = await Booking.findOneAndUpdate(
+        { _id: oid(bookingId), isDeleted: false },
         {
           bookingStatus: "confirmed",
           confirmedAt: new Date(),
@@ -235,7 +255,10 @@ export class BookingService {
     userId?: string
   ): Promise<IBooking | null> {
     try {
-      const booking = await Booking.findById(oid(bookingId));
+      const booking = await Booking.findOne({
+        _id: oid(bookingId),
+        isDeleted: false,
+      });
       if (!booking) {
         throw new Error("Booking not found");
       }
@@ -270,6 +293,7 @@ export class BookingService {
     try {
       const query: any = {
         venueId,
+        isDeleted: false,
         bookingStatus: { $in: ["pending", "confirmed"] },
         $or: [
           // New booking starts during an existing booking
@@ -302,14 +326,106 @@ export class BookingService {
   }
 
   /**
-   * Hard delete booking (permanent deletion)
+   * Soft delete booking (sets isDeleted flag)
    */
-  static async deleteBooking(bookingId: string): Promise<IBooking | null> {
+  static async deleteBooking(
+    bookingId: string,
+    userId?: string
+  ): Promise<IBooking | null> {
     try {
-      const booking = await Booking.findByIdAndDelete(oid(bookingId));
+      // Check if there are any purchase orders associated with this booking
+      const { PurchaseOrder } = await import("../models/PurchaseOrder");
+      const associatedPOs = await PurchaseOrder.countDocuments({
+        bookingId: oid(bookingId),
+      });
+
+      if (associatedPOs > 0) {
+        console.warn(
+          `⚠️  Soft deleting booking ${bookingId} which has ${associatedPOs} associated Purchase Order(s). POs will remain but no new payments can be made.`
+        );
+      }
+
+      // Check if there are any transactions
+      const transactionCount = await Transaction.countDocuments({
+        bookingId: oid(bookingId),
+      });
+
+      if (transactionCount > 0) {
+        console.warn(
+          `⚠️  Soft deleting booking ${bookingId} which has ${transactionCount} transaction(s). Transactions will remain for audit purposes.`
+        );
+      }
+
+      // Soft delete the booking
+      const booking = await Booking.findOneAndUpdate(
+        { _id: oid(bookingId), isDeleted: false },
+        {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy: userId ? oid(userId) : null,
+        },
+        { new: true }
+      );
+
+      if (!booking) {
+        throw new Error("Booking not found or already deleted");
+      }
+
       return booking;
     } catch (error: any) {
       throw new Error(`Error deleting booking: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get deleted bookings (for dev/admin use only)
+   */
+  static async getDeletedBookings(filters?: {
+    limit?: number;
+    skip?: number;
+  }): Promise<{ bookings: any[]; total: number }> {
+    try {
+      const query = { isDeleted: true };
+
+      const total = await Booking.countDocuments(query);
+      const bookings = await Booking.find(query)
+        .sort({ deletedAt: -1 })
+        .limit(filters?.limit || 50)
+        .skip(filters?.skip || 0)
+        .populate("venueId", "venueName venueType")
+        .populate("deletedBy", "email firstName lastName")
+        .lean();
+
+      return { bookings, total };
+    } catch (error: any) {
+      throw new Error(`Error fetching deleted bookings: ${error.message}`);
+    }
+  }
+
+  /**
+   * Restore a soft-deleted booking
+   */
+  static async restoreBooking(bookingId: string): Promise<IBooking | null> {
+    try {
+      const booking = await Booking.findOneAndUpdate(
+        { _id: oid(bookingId), isDeleted: true },
+        {
+          isDeleted: false,
+          deletedAt: null,
+          deletedBy: null,
+        },
+        { new: true }
+      )
+        .populate("venueId", "venueName venueType address")
+        .populate("leadId", "clientName contactNo email leadStatus");
+
+      if (!booking) {
+        throw new Error("Deleted booking not found");
+      }
+
+      return booking;
+    } catch (error: any) {
+      throw new Error(`Error restoring booking: ${error.message}`);
     }
   }
 }

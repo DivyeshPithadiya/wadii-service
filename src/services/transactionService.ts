@@ -36,7 +36,7 @@ export class TransactionService {
       // Fetch the booking
       const booking = await Booking.findById(oid(bookingId));
       if (!booking) {
-        throw new Error("Booking not found");
+        throw new Error("Booking not found. Cannot create transaction for a deleted booking.");
       }
 
       // Handle inbound (customer) transactions
