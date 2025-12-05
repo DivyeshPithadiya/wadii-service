@@ -23,11 +23,11 @@ class Database {
       console.log("📦 MongoDB connected successfully");
 
       mongoose.connection.on("error", (error) => {
-        console.error("❌ MongoDB connection error:", error);
+        console.error(" MongoDB connection error:", error);
       });
 
       mongoose.connection.on("disconnected", () => {
-        console.log("⚠️ MongoDB disconnected");
+        console.log(" MongoDB disconnected");
       });
 
       process.on("SIGINT", async () => {
@@ -36,7 +36,7 @@ class Database {
         process.exit(0);
       });
     } catch (error) {
-      console.error("❌ MongoDB connection failed:", error);
+      console.error(" MongoDB connection failed:", error);
       process.exit(1);
     }
   }

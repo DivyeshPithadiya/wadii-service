@@ -40,8 +40,10 @@ export class BookingController {
 
       // Check slot availability before creating
       if (!req.body.eventStartDateTime || !req.body.eventEndDateTime) {
-        console.log("❌ Invalid datetime range");
-        res.status(400).json({ success: false, message: "Invalid datetime range" });
+        console.log(" Invalid datetime range");
+        res
+          .status(400)
+          .json({ success: false, message: "Invalid datetime range" });
         return;
       }
 
@@ -59,7 +61,7 @@ export class BookingController {
       console.log("Slot Available:", isAvailable);
 
       if (!isAvailable) {
-        console.log("❌ Time slot unavailable");
+        console.log(" Time slot unavailable");
         res.status(409).json({
           success: false,
           message: "Time slot is not available for this venue",
@@ -78,11 +80,14 @@ export class BookingController {
 
       const booking = await BookingService.createBooking(bookingData);
 
-      console.log("✅ Booking created successfully");
+      console.log("Booking created successfully");
       console.log("Booking ID:", booking._id);
 
       // Create initial transaction if advance amount is provided
-      if (req.body.payment?.advanceAmount && req.body.payment.advanceAmount > 0) {
+      if (
+        req.body.payment?.advanceAmount &&
+        req.body.payment.advanceAmount > 0
+      ) {
         console.log("Creating initial transaction for advance payment...");
         try {
           await TransactionService.createTransaction({
@@ -94,9 +99,12 @@ export class BookingController {
             paidAt: new Date(),
             createdBy: req.user.userId,
           });
-          console.log("✅ Initial transaction created");
+          console.log("Initial transaction created");
         } catch (txnError: any) {
-          console.error("⚠️ Warning: Failed to create initial transaction:", txnError.message);
+          console.error(
+            " Warning: Failed to create initial transaction:",
+            txnError.message
+          );
           // Don't fail the booking creation if transaction creation fails
         }
       }
@@ -110,7 +118,10 @@ export class BookingController {
         );
         console.log(`✅ ${generatedPOs.length} PO(s) auto-generated successfully`);
       } catch (poError: any) {
-        console.error("⚠️ Warning: Failed to auto-generate POs:", poError.message);
+        console.error(
+          " Warning: Failed to auto-generate POs:",
+          poError.message
+        );
         // Don't fail the booking creation if PO generation fails
       }
 
@@ -120,7 +131,7 @@ export class BookingController {
         data: booking,
       });
     } catch (error: any) {
-      console.error("❌ Error in createBooking:", error);
+      console.error(" Error in createBooking:", error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -218,7 +229,7 @@ export class BookingController {
         console.log("Current Booking:", currentBooking);
 
         if (!currentBooking) {
-          console.log("❌ Booking not found");
+          console.log(" Booking not found");
           res
             .status(404)
             .json({ success: false, message: "Booking not found" });
@@ -234,7 +245,8 @@ export class BookingController {
           : currentBooking.eventEndDateTime;
 
         const isAvailable = await BookingService.checkSlotAvailability(
-          (currentBooking.venueId as any)._id?.toString() || currentBooking.venueId.toString(),
+          (currentBooking.venueId as any)._id?.toString() ||
+            currentBooking.venueId.toString(),
           startDateTime,
           endDateTime,
           bookingId
@@ -243,7 +255,7 @@ export class BookingController {
         console.log("Slot Available:", isAvailable);
 
         if (!isAvailable) {
-          console.log("❌ Time slot unavailable");
+          console.log(" Time slot unavailable");
           res.status(409).json({
             success: false,
             message: "Time slot is not available for this venue",
@@ -264,7 +276,7 @@ export class BookingController {
       console.log("Update Result:", booking);
 
       if (!booking) {
-        console.log("❌ Booking not found on update");
+        console.log(" Booking not found on update");
         res.status(404).json({ success: false, message: "Booking not found" });
         return;
       }
@@ -277,7 +289,7 @@ export class BookingController {
         data: booking,
       });
     } catch (error: any) {
-      console.error("❌ Error in updateBooking:", error);
+      console.error(" Error in updateBooking:", error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
