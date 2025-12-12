@@ -22,6 +22,7 @@ const packageSchema = z.object({
   description: z.string().optional(),
   price: z.number().min(0, "Price must be positive"),
   priceType: z.enum(["flat", "per_guest"]),
+  inclusions: z.array(z.string()).optional(),
 });
 
 /**

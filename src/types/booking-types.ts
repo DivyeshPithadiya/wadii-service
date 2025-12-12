@@ -19,6 +19,7 @@ export interface IBooking extends Document {
     description?: string;
     price: number;
     priceType: "flat" | "per_guest";
+    inclusions?: string[];
   };
   cateringServiceVendor?: {
     name: string;
@@ -91,6 +92,7 @@ export interface CreateBookingDTO {
     description?: string;
     price: number;
     priceType: "flat" | "per_guest";
+    inclusions?: string[];
   };
   cateringServiceVendor?: {
     name: string;
@@ -149,6 +151,7 @@ export interface UpdateBookingDTO {
     description?: string;
     price: number;
     priceType: "flat" | "per_guest";
+    inclusions?: string[];
   };
   cateringServiceVendor?: {
     name: string;

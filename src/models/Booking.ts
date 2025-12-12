@@ -71,6 +71,12 @@ const bookingSchema = new Schema<IBooking, mongoose.Model<IBooking, BookingQuery
           enum: ["flat", "per_guest"],
           required: true,
         },
+        inclusions: {
+          type: [String],
+          default: [],
+          required: false,
+        },
+        _id: false,
       },
       required: false,
     },
