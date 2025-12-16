@@ -72,6 +72,17 @@ export interface ICreateVenueData {
     priceType: "flat" | "per_person";
     inclusions: [""];
   }>;
+  foodMenu?: Array<{
+    sectionName: string;
+    selectionType: "free" | "limit" | "all_included";
+    maxSelectable?: number;
+    items: Array<{
+      name: string;
+      description?: string;
+      isAvailable?: boolean;
+      priceAdjustment?: number;
+    }>;
+  }>;
   cateringServiceVendor?: Array<{
     name: string;
     email: string;
@@ -216,6 +227,7 @@ export class VenueService {
         address: venueData.address,
         media: venueData.media,
         foodPackages: venueData.foodPackages || [],
+        foodMenu: venueData.foodMenu || [],
         cateringServiceVendor: venueData.cateringServiceVendor || [],
         bookingPreferences: venueData.bookingPreferences,
         services: venueData.services || [],

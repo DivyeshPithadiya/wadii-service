@@ -9,6 +9,7 @@ import transactionRoutes from "./transactionRoutes";
 import purchaseOrderRoutes from "./purchaseOrderRoutes";
 import reportRoutes from "./reportRoutes";
 import blackoutDayRoutes from "./blackoutDayRoutes";
+import foodMenuRoutes from "./foodMenuRoutes";
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.get("/health", (req, res) => {
 router.use("/auth", authRoutes);
 router.use("/businesses", businessRoutes);
 router.use("/venues", venueRoutes);
+router.use("/venues", foodMenuRoutes); // Food menu routes under /venues/:venueId/food-menu
 router.use("/managers", managerRoutes);
 router.use("/leads", leadRoutes);
 router.use("/bookings", bookingRoutes);

@@ -1,5 +1,17 @@
 import { Document, Types } from "mongoose";
 
+export interface ISelectedMenuItem {
+  name: string;
+  description?: string;
+  priceAdjustment?: number;
+}
+
+export interface ISelectedMenuSection {
+  sectionName: string;
+  selectionType: "free" | "limit" | "all_included";
+  selectedItems: ISelectedMenuItem[];
+}
+
 export interface ILead extends Document {
   _id: Types.ObjectId;
   venueId: Types.ObjectId;
@@ -48,6 +60,7 @@ export interface ILead extends Document {
     };
     price: number;
   }>;
+  selectedMenu?: ISelectedMenuSection[];
   notes?: string;
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;

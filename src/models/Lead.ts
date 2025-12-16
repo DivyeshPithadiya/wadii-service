@@ -192,6 +192,39 @@ const leadSchema = new Schema<ILead>(
         },
       },
     ],
+    selectedMenu: [
+      {
+        sectionName: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        selectionType: {
+          type: String,
+          enum: ["free", "limit", "all_included"],
+          required: true,
+        },
+        selectedItems: [
+          {
+            name: {
+              type: String,
+              required: true,
+              trim: true,
+            },
+            description: {
+              type: String,
+              trim: true,
+            },
+            priceAdjustment: {
+              type: Number,
+              default: 0,
+            },
+            _id: false,
+          },
+        ],
+        _id: false,
+      },
+    ],
     // DateTime Range (Updated Structure)
     eventStartDateTime: {
       type: Date,

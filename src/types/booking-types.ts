@@ -1,6 +1,18 @@
 // types/booking-types.ts
 import { Document, Types } from "mongoose";
 
+export interface ISelectedMenuItem {
+  name: string;
+  description?: string;
+  priceAdjustment?: number;
+}
+
+export interface ISelectedMenuSection {
+  sectionName: string;
+  selectionType: "free" | "limit" | "all_included";
+  selectedItems: ISelectedMenuItem[];
+}
+
 export interface IBooking extends Document {
   _id: Types.ObjectId;
   venueId: Types.ObjectId;
@@ -51,6 +63,7 @@ export interface IBooking extends Document {
     };
     price: number;
   }>;
+  selectedMenu?: ISelectedMenuSection[];
   // Payment Details (Booking-specific)
   payment: {
     totalAmount: number;
