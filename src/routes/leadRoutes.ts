@@ -41,35 +41,55 @@ const serviceSchema = z.object({
   price: z.number().min(0, "Price must be positive").default(0),
 });
 
-const createLeadSchema = z.object({
-  venueId: objectId,
-  clientName: z.string().min(1, "Client name is required"),
-  contactNo: z.string().min(1, "Contact number is required"),
-  email: z.string().email("Invalid email format"),
-  occasionType: z.string().min(1, "Occasion type is required"),
-  numberOfGuests: z.number().min(1, "Number of guests must be at least 1"),
-  leadStatus: z.enum(["cold", "warm", "hot"]).default("cold"),
-  eventStartDateTime: z.coerce.date(),
-  eventEndDateTime: z.coerce.date(),
-  slotType: z.enum(["setup", "event", "cleanup", "full_day"]).default("event"),
-  package: packageSchema.optional(),
-  services: z.array(serviceSchema).optional(),
-  notes: z.string().optional(),
-  cateringServiceVendor: z
-    .object({
-      name: z.string(),
-      email: z.string().email(),
-      phone: z.string(),
-      bankDetails: bankDetailsSchema.optional(),
-    })
-    .optional(),
-}).refine(
-  (data) => new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime),
-  {
-    message: "End datetime must be after start datetime",
-    path: ["eventEndDateTime"],
-  }
-);
+const selectedMenuItemSchema = z.object({
+  name: z.string().min(1, "Item name is required"),
+  description: z.string().optional(),
+  priceAdjustment: z.number().min(0),
+});
+
+const selectedMenuSectionSchema = z.object({
+  sectionName: z.string().min(1, "Section name is required"),
+  selectionType: z.enum(["free", "limit", "all_included"]),
+  selectedItems: z
+    .array(selectedMenuItemSchema)
+    .min(1, "At least one item is required"),
+});
+
+const createLeadSchema = z
+  .object({
+    venueId: objectId,
+    clientName: z.string().min(1, "Client name is required"),
+    contactNo: z.string().min(1, "Contact number is required"),
+    email: z.string().email("Invalid email format"),
+    occasionType: z.string().min(1, "Occasion type is required"),
+    numberOfGuests: z.number().min(1, "Number of guests must be at least 1"),
+    leadStatus: z.enum(["cold", "warm", "hot"]).default("cold"),
+    eventStartDateTime: z.coerce.date(),
+    eventEndDateTime: z.coerce.date(),
+    slotType: z
+      .enum(["setup", "event", "cleanup", "full_day"])
+      .default("event"),
+    package: packageSchema.optional(),
+    services: z.array(serviceSchema).optional(),
+    notes: z.string().optional(),
+    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
+    cateringServiceVendor: z
+      .object({
+        name: z.string(),
+        email: z.string().email(),
+        phone: z.string(),
+        bankDetails: bankDetailsSchema.optional(),
+      })
+      .optional(),
+  })
+  .refine(
+    (data) =>
+      new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime),
+    {
+      message: "End datetime must be after start datetime",
+      path: ["eventEndDateTime"],
+    }
+  );
 
 const updateLeadSchema = z
   .object({
@@ -84,6 +104,7 @@ const updateLeadSchema = z
     slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
     package: packageSchema.optional(),
     services: z.array(serviceSchema).optional(),
+    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
     cateringServiceVendor: z
       .object({
         name: z.string(),

@@ -41,6 +41,20 @@ const serviceSchema = z.object({
   price: z.number().min(0, "Price must be positive").default(0),
 });
 
+const selectedMenuItemSchema = z.object({
+  name: z.string().min(1, "Item name is required"),
+  description: z.string().optional(),
+  priceAdjustment: z.number().min(0),
+});
+
+const selectedMenuSectionSchema = z.object({
+  sectionName: z.string().min(1, "Section name is required"),
+  selectionType: z.enum(["free", "limit", "all_included"]),
+  selectedItems: z
+    .array(selectedMenuItemSchema)
+    .min(1, "At least one item is required"),
+});
+
 /**
  * Create booking validation schema
  */
@@ -62,6 +76,7 @@ export const createBookingSchema = z
       .optional(),
     eventStartDateTime: z.coerce.date(),
     eventEndDateTime: z.coerce.date(),
+    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
     slotType: z
       .enum(["setup", "event", "cleanup", "full_day"])
       .default("event"),
@@ -75,6 +90,7 @@ export const createBookingSchema = z
       })
       .optional(),
     services: z.array(serviceSchema).optional(),
+
     payment: z.object({
       totalAmount: z.number().min(0, "Total amount must be positive"),
       advanceAmount: z
@@ -122,6 +138,7 @@ export const updateBookingSchema = z
     eventEndDateTime: z.coerce.date().optional(),
     slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
     package: packageSchema.optional(),
+    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
     cateringServiceVendor: z
       .object({
         name: z.string(),
@@ -153,7 +170,10 @@ export const updateBookingSchema = z
   .partial()
   .refine(
     (data) => {
-      if (data.payment?.advanceAmount !== undefined && data.payment?.totalAmount !== undefined) {
+      if (
+        data.payment?.advanceAmount !== undefined &&
+        data.payment?.totalAmount !== undefined
+      ) {
         return data.payment.advanceAmount <= data.payment.totalAmount;
       }
       return true;
@@ -166,7 +186,9 @@ export const updateBookingSchema = z
   .refine(
     (data) => {
       if (data.eventStartDateTime && data.eventEndDateTime) {
-        return new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime);
+        return (
+          new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime)
+        );
       }
       return true;
     },

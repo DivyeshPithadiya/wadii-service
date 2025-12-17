@@ -9,6 +9,8 @@ export class LeadService {
    */
   async createLead(leadData: Partial<ILead>): Promise<ILead> {
     try {
+
+      console.log("Creating lead with data:", leadData);
       // Check for blackout day conflicts
       if (leadData.venueId && leadData.eventStartDateTime && leadData.eventEndDateTime) {
         const conflictResult = await BlackoutDayService.checkBlackoutConflict(
@@ -94,6 +96,12 @@ export class LeadService {
         .populate("venueId", "venueName venueType")
         .populate("createdBy", "_id email firstName lastName")
         .populate("updatedBy", "_id email firstName lastName");
+
+        console.log(
+          `Fetched ${leads.length} leads for venue ${venueId} with filters:`,
+          filters
+        );
+        console.log(`Total leads : ${leads}`);
 
       return { leads, total };
     } catch (error:any) {
