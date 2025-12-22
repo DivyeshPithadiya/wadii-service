@@ -3,6 +3,11 @@ import { Transaction } from "../models/Transaction";
 import { IBooking } from "../types/booking-types";
 import { Types } from "mongoose";
 import BlackoutDayService from "./blackoutDayService";
+import {
+  calculateFoodCost,
+  calculateTotals,
+  recalcFoodPackage,
+} from "../utils/helper";
 
 const oid = (id: string) => new Types.ObjectId(id);
 
@@ -10,13 +15,15 @@ export class BookingService {
   /**
    * Create a new booking
    */
-  static async createBooking(bookingData: Partial<IBooking>): Promise<IBooking> {
+  static async createBooking(
+    bookingData: Partial<IBooking>
+  ): Promise<IBooking> {
     try {
-      console.log("---- BookingService.createBooking ----");
-      console.log("Booking Data:", JSON.stringify(bookingData, null, 2));
-
-      // Check for blackout day conflicts
-      if (bookingData.venueId && bookingData.eventStartDateTime && bookingData.eventEndDateTime) {
+      if (
+        bookingData.venueId &&
+        bookingData.eventStartDateTime &&
+        bookingData.eventEndDateTime
+      ) {
         const conflictResult = await BlackoutDayService.checkBlackoutConflict(
           bookingData.venueId.toString(),
           bookingData.eventStartDateTime,
@@ -24,11 +31,39 @@ export class BookingService {
         );
 
         if (conflictResult.hasConflict) {
-          const conflictDates = conflictResult.conflictingDays?.map(bd =>
-            `${bd.title} (${new Date(bd.startDate).toLocaleDateString()} - ${new Date(bd.endDate).toLocaleDateString()})`
-          ).join(", ");
-          throw new Error(`Cannot create booking. The selected dates conflict with blackout days: ${conflictDates}`);
+          const conflictDates = conflictResult.conflictingDays
+            ?.map(
+              (bd) =>
+                `${bd.title} (${new Date(
+                  bd.startDate
+                ).toLocaleDateString()} - ${new Date(
+                  bd.endDate
+                ).toLocaleDateString()})`
+            )
+            .join(", ");
+          throw new Error(
+            `Cannot create booking. The selected dates conflict with blackout days: ${conflictDates}`
+          );
         }
+      }
+      if (bookingData.foodPackage && bookingData.numberOfGuests) {
+        bookingData.foodPackage = recalcFoodPackage(bookingData.foodPackage);
+
+        const totals = calculateTotals({
+          foodPackage: bookingData.foodPackage,
+          numberOfGuests: bookingData.numberOfGuests,
+          services: bookingData.services,
+        });
+
+        bookingData.foodCostTotal = totals.foodCostTotal;
+
+        bookingData.payment = {
+          ...bookingData.payment,
+          totalAmount: Number(totals.totalAmount),
+          advanceAmount: bookingData.payment?.advanceAmount ?? 0,
+          paymentStatus: bookingData.payment?.paymentStatus ?? "unpaid",
+          paymentMode: bookingData.payment?.paymentMode ?? "cash",
+        };
       }
 
       const booking = new Booking(bookingData);
@@ -43,7 +78,7 @@ export class BookingService {
         { path: "venueId", select: "venueName venueType address" },
         { path: "leadId", select: "clientName contactNo email leadStatus" },
         { path: "createdBy", select: "_id email firstName lastName" },
-        { path: "updatedBy", select: "_id email firstName lastName" }
+        { path: "updatedBy", select: "_id email firstName lastName" },
       ]);
 
       console.log("Population complete. Returning booking.");
@@ -147,7 +182,9 @@ export class BookingService {
             bookingId: booking._id,
             direction: "inbound",
           })
-            .select("amount mode status type paidAt notes referenceId createdAt")
+            .select(
+              "amount mode status type paidAt notes referenceId createdAt"
+            )
             .sort({ paidAt: 1, createdAt: 1 })
             .lean();
 
@@ -172,6 +209,15 @@ export class BookingService {
     updateData: Partial<IBooking>
   ): Promise<IBooking | null> {
     try {
+      if (updateData.foodPackage && updateData.numberOfGuests) {
+        updateData.foodPackage = recalcFoodPackage(updateData.foodPackage);
+
+        updateData.foodCostTotal = calculateFoodCost(
+          updateData.foodPackage,
+          updateData.numberOfGuests
+        );
+      }
+
       const booking = await Booking.findOneAndUpdate(
         { _id: oid(bookingId), isDeleted: false },
         {
@@ -272,7 +318,7 @@ export class BookingService {
         { path: "venueId", select: "venueName venueType address" },
         { path: "leadId", select: "clientName contactNo email leadStatus" },
         { path: "createdBy", select: "_id email firstName lastName" },
-        { path: "updatedBy", select: "_id email firstName lastName" }
+        { path: "updatedBy", select: "_id email firstName lastName" },
       ]);
 
       return booking;
@@ -299,19 +345,19 @@ export class BookingService {
           // New booking starts during an existing booking
           {
             eventStartDateTime: { $lte: eventStartDateTime },
-            eventEndDateTime: { $gt: eventStartDateTime }
+            eventEndDateTime: { $gt: eventStartDateTime },
           },
           // New booking ends during an existing booking
           {
             eventStartDateTime: { $lt: eventEndDateTime },
-            eventEndDateTime: { $gte: eventEndDateTime }
+            eventEndDateTime: { $gte: eventEndDateTime },
           },
           // New booking completely encompasses an existing booking
           {
             eventStartDateTime: { $gte: eventStartDateTime },
-            eventEndDateTime: { $lte: eventEndDateTime }
-          }
-        ]
+            eventEndDateTime: { $lte: eventEndDateTime },
+          },
+        ],
       };
 
       if (excludeBookingId) {

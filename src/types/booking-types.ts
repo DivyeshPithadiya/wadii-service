@@ -1,6 +1,31 @@
 // types/booking-types.ts
 import { Document, Types } from "mongoose";
 
+
+export interface IFoodPackageItem {
+  menuItemId?: Types.ObjectId;
+  name: string;
+  description?: string;
+  pricePerPerson: number;
+  isCustom: boolean;
+}
+
+export interface IFoodPackageSection {
+  sectionName: string;
+  selectionType: "free" | "limit" | "all_included";
+  maxSelectable?: number;
+  items: IFoodPackageItem[];
+  sectionTotalPerPerson: number;
+}
+
+export interface IFoodPackageSnapshot {
+  sourcePackageId?: Types.ObjectId;
+  name: string;
+  isCustomised: boolean;
+  sections: IFoodPackageSection[];
+  totalPricePerPerson: number;
+}
+
 export interface ISelectedMenuItem {
   name: string;
   description?: string;
@@ -26,6 +51,8 @@ export interface IBooking extends Document {
   eventStartDateTime: Date;
   eventEndDateTime: Date;
   slotType: "setup" | "event" | "cleanup" | "full_day";
+  foodPackage?: IFoodPackageSnapshot;
+  foodCostTotal: number;
   package?: {
     name: string;
     description?: string;
@@ -99,7 +126,9 @@ export interface CreateBookingDTO {
   bookingStatus?: "pending" | "confirmed" | "cancelled" | "completed";
   eventStartDateTime: Date;
   eventEndDateTime: Date;
+  foodCostTotal: number;
   slotType: "setup" | "event" | "cleanup" | "full_day";
+  foodPackage?: IFoodPackageSnapshot;
   package?: {
     name: string;
     description?: string;
@@ -154,11 +183,13 @@ export interface UpdateBookingDTO {
   contactNo?: string;
   email?: string;
   occasionType?: string;
+  foodCostTotal: number;
   eventStartDateTime?: Date;
   eventEndDateTime?: Date;
   slotType?: "setup" | "event" | "cleanup" | "full_day";
   numberOfGuests?: number;
   bookingStatus?: "pending" | "confirmed" | "cancelled" | "completed";
+  foodPackage?: IFoodPackageSnapshot;
   package?: {
     name: string;
     description?: string;
@@ -200,7 +231,13 @@ export interface UpdateBookingDTO {
     totalAmount?: number;
     advanceAmount?: number;
     paymentStatus?: "unpaid" | "partially_paid" | "paid";
-    paymentMode?: "cash" | "card" | "upi" | "bank_transfer" | "cheque" | "other";
+    paymentMode?:
+      | "cash"
+      | "card"
+      | "upi"
+      | "bank_transfer"
+      | "cheque"
+      | "other";
   };
   notes?: string;
   internalNotes?: string;

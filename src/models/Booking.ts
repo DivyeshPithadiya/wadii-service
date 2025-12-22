@@ -7,7 +7,99 @@ interface BookingQueryHelpers {
   onlyDeleted(): Query<any, IBooking, BookingQueryHelpers> & BookingQueryHelpers;
 }
 
-const bookingSchema = new Schema<IBooking, mongoose.Model<IBooking, BookingQueryHelpers>, {}, BookingQueryHelpers>(
+ 
+const FoodItemSchema = new Schema(
+  {
+    menuItemId: {
+      type: Schema.Types.ObjectId,
+      required: false, // null for custom items
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    pricePerPerson: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    isCustom: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: false }
+);
+
+const FoodPackageSectionSchema = new Schema(
+  {
+    sectionName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    selectionType: {
+      type: String,
+      enum: ["free", "limit", "all_included"],
+      required: true,
+    },
+    maxSelectable: {
+      type: Number,
+      required: false,
+      min: 1,
+    },
+    items: {
+      type: [FoodItemSchema],
+      default: [],
+    },
+    sectionTotalPerPerson: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
+const FoodPackageSchema = new Schema(
+  {
+    sourcePackageId: {
+      type: Schema.Types.ObjectId,
+      required: false, // venue template reference (optional)
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    isCustomised: {
+      type: Boolean,
+      default: false,
+    },
+    sections: {
+      type: [FoodPackageSectionSchema],
+      required: true,
+    },
+    totalPricePerPerson: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
+const bookingSchema = new Schema<
+  IBooking,
+  mongoose.Model<IBooking, BookingQueryHelpers>,
+  {},
+  BookingQueryHelpers
+>(
   {
     venueId: {
       type: Schema.Types.ObjectId,
@@ -50,6 +142,10 @@ const bookingSchema = new Schema<IBooking, mongoose.Model<IBooking, BookingQuery
       enum: ["pending", "confirmed", "cancelled", "completed"],
       default: "pending",
     },
+    foodPackage: {
+      type: FoodPackageSchema,
+      required: false,
+    },
     package: {
       type: {
         name: {
@@ -76,6 +172,39 @@ const bookingSchema = new Schema<IBooking, mongoose.Model<IBooking, BookingQuery
           default: [],
           required: false,
         },
+        selectedMenu: [
+          {
+            sectionName: {
+              type: String,
+              required: true,
+              trim: true,
+            },
+            selectionType: {
+              type: String,
+              enum: ["free", "limit", "all_included"],
+              required: true,
+            },
+            selectedItems: [
+              {
+                name: {
+                  type: String,
+                  required: true,
+                  trim: true,
+                },
+                description: {
+                  type: String,
+                  trim: true,
+                },
+                priceAdjustment: {
+                  type: Number,
+                  default: 0,
+                },
+                _id: false,
+              },
+            ],
+            _id: false,
+          },
+        ],
         _id: false,
       },
       required: false,

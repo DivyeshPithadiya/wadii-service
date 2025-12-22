@@ -11,6 +11,8 @@ export interface BookingQueryFilters {
   skip?: number;
 }
 
+
+
 export interface CreateBookingReq extends Request {
   body: Partial<IBooking> & {
     venueId: string;

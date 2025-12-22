@@ -1,6 +1,95 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { ILead } from "../types/lead-types";
 
+
+
+ 
+const FoodItemSchema = new Schema(
+  {
+    menuItemId: {
+      type: Schema.Types.ObjectId,
+      required: false, // null for custom items
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    pricePerPerson: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    isCustom: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: false }
+);
+
+const FoodPackageSectionSchema = new Schema(
+  {
+    sectionName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    selectionType: {
+      type: String,
+      enum: ["free", "limit", "all_included"],
+      required: true,
+    },
+    maxSelectable: {
+      type: Number,
+      required: false,
+      min: 1,
+    },
+    items: {
+      type: [FoodItemSchema],
+      default: [],
+    },
+    sectionTotalPerPerson: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
+const FoodPackageSchema = new Schema(
+  {
+    sourcePackageId: {
+      type: Schema.Types.ObjectId,
+      required: false, // venue template reference (optional)
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    isCustomised: {
+      type: Boolean,
+      default: false,
+    },
+    sections: {
+      type: [FoodPackageSectionSchema],
+      required: true,
+    },
+    totalPricePerPerson: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
 const leadSchema = new Schema<ILead>(
   {
     venueId: {
@@ -61,6 +150,10 @@ const leadSchema = new Schema<ILead>(
           required: true,
         },
       },
+      required: false,
+    },
+    foodPackage: {
+      type: FoodPackageSchema,
       required: false,
     },
     cateringServiceVendor: {
@@ -280,3 +373,4 @@ leadSchema.index({ venueId: 1, leadStatus: 1 });
 leadSchema.index({ venueId: 1, eventStartDateTime: 1 });
 
 export const Lead = mongoose.model<ILead>("Lead", leadSchema);
+

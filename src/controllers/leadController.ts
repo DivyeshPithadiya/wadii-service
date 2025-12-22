@@ -56,6 +56,8 @@ export class LeadController {
         venueId: oid(req.body.venueId),
       };
 
+      console.log("Creating lead with data:", leadData);
+
       const lead = await LeadService.createLead(leadData);
 
       res.status(201).json({
@@ -130,16 +132,12 @@ export class LeadController {
    * Update lead
    */
   static async updateLead(req: UpdateLeadReq, res: Response): Promise<void> {
-    const start = Date.now();
-    console.log("🟡 [updateLead] Request started");
+
 
     try {
-      console.log("➡️  User:", req.user);
-      console.log("➡️  Params:", req.params);
-      console.log("➡️  Body:", req.body);
+
 
       if (!req.user?.userId) {
-        console.log("Unauthorized request - no userId found");
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
@@ -150,8 +148,6 @@ export class LeadController {
         updatedBy: oid(req.user.userId),
       };
 
-      console.log("🧩 Update Data:", updateData);
-
       const lead = await LeadService.updateLead(leadId, updateData);
 
       if (!lead) {
@@ -160,13 +156,8 @@ export class LeadController {
         return;
       }
 
-      console.log("✅ Lead updated successfully:", {
-        leadId,
-        updatedBy: req.user.userId,
-      });
-
-      const duration = Date.now() - start;
-      console.log(`⏱️  updateLead completed in ${duration}ms`);
+    
+      
 
       res.status(200).json({
         success: true,

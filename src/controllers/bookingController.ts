@@ -28,29 +28,20 @@ export class BookingController {
     res: Response
   ): Promise<void> {
     try {
-      console.log("---- CREATE BOOKING REQUEST RECEIVED ----");
-      console.log("User:", req.user);
-      console.log("Body:", req.body);
+    
 
       if (!req.user?.userId) {
-        console.log("Unauthorized request: Missing userId");
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
 
       // Check slot availability before creating
       if (!req.body.eventStartDateTime || !req.body.eventEndDateTime) {
-        console.log(" Invalid datetime range");
         res
           .status(400)
           .json({ success: false, message: "Invalid datetime range" });
         return;
       }
-
-      console.log("Checking slot availability...");
-      console.log("Venue ID:", req.body.venueId);
-      console.log("Start DateTime:", req.body.eventStartDateTime);
-      console.log("End DateTime:", req.body.eventEndDateTime);
 
       const isAvailable = await BookingService.checkSlotAvailability(
         req.body.venueId,
@@ -58,10 +49,7 @@ export class BookingController {
         new Date(req.body.eventEndDateTime)
       );
 
-      console.log("Slot Available:", isAvailable);
-
       if (!isAvailable) {
-        console.log(" Time slot unavailable");
         res.status(409).json({
           success: false,
           message: "Time slot is not available for this venue",
@@ -76,12 +64,8 @@ export class BookingController {
         leadId: req.body.leadId ? oid(req.body.leadId) : null,
       };
 
-      console.log("Creating booking with data:", bookingData);
 
       const booking = await BookingService.createBooking(bookingData);
-
-      console.log("Booking created successfully");
-      console.log("Booking ID:", booking._id);
 
       // Create initial transaction if advance amount is provided
       if (
@@ -112,11 +96,10 @@ export class BookingController {
       // Auto-generate POs for the booking
       console.log("Auto-generating POs for booking...");
       try {
-        const generatedPOs = await BookingPOService.generatePOsForBooking(
-          booking._id.toString(),
-          req.user.userId
-        );
-        console.log(`✅ ${generatedPOs.length} PO(s) auto-generated successfully`);
+         await BookingPOService.generatePOsForBooking(
+           booking._id.toString(),
+           req.user.userId
+         );
       } catch (poError: any) {
         console.error(
           " Warning: Failed to auto-generate POs:",
@@ -206,30 +189,20 @@ export class BookingController {
     res: Response
   ): Promise<void> {
     try {
-      console.log("---- UPDATE BOOKING REQUEST RECEIVED ----");
-      console.log("User:", req.user);
-      console.log("Params:", req.params);
-      console.log("Body:", req.body);
-
       if (!req.user?.userId) {
-        console.log("Unauthorized request: Missing userId");
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
 
       const { bookingId } = req.params;
 
-      console.log("Booking ID:", bookingId);
-
       // If updating time slot, check availability
       if (req.body.eventStartDateTime || req.body.eventEndDateTime) {
         console.log("DateTime update detected. Checking availability…");
 
         const currentBooking = await BookingService.getBookingById(bookingId);
-        console.log("Current Booking:", currentBooking);
 
         if (!currentBooking) {
-          console.log(" Booking not found");
           res
             .status(404)
             .json({ success: false, message: "Booking not found" });
@@ -252,10 +225,7 @@ export class BookingController {
           bookingId
         );
 
-        console.log("Slot Available:", isAvailable);
-
         if (!isAvailable) {
-          console.log(" Time slot unavailable");
           res.status(409).json({
             success: false,
             message: "Time slot is not available for this venue",

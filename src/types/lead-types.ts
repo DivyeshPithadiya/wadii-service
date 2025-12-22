@@ -1,5 +1,31 @@
 import { Document, Types } from "mongoose";
 
+
+
+export interface IFoodPackageItem {
+  menuItemId?: Types.ObjectId;
+  name: string;
+  description?: string;
+  pricePerPerson: number;
+  isCustom: boolean;
+}
+
+export interface IFoodPackageSection {
+  sectionName: string;
+  selectionType: "free" | "limit" | "all_included";
+  maxSelectable?: number;
+  items: IFoodPackageItem[];
+  sectionTotalPerPerson: number;
+}
+
+export interface IFoodPackageSnapshot {
+  sourcePackageId?: Types.ObjectId;
+  name: string;
+  isCustomised: boolean;
+  sections: IFoodPackageSection[];
+  totalPricePerPerson: number;
+}
+
 export interface ISelectedMenuItem {
   name: string;
   description?: string;
@@ -30,6 +56,7 @@ export interface ILead extends Document {
     price: number;
     priceType: "flat" | "per_guest";
   };
+  foodPackage?: IFoodPackageSnapshot;
   cateringServiceVendor?: {
     name: string;
     email: string;
@@ -80,6 +107,7 @@ export interface CreateLeadDTO {
   leadStatus?: "cold" | "warm" | "hot";
   eventStartDateTime: Date;
   eventEndDateTime: Date;
+  foodPackage?: IFoodPackageSnapshot;
   slotType: "setup" | "event" | "cleanup" | "full_day";
   package?: {
     name: string;
@@ -132,6 +160,7 @@ export interface UpdateLeadDTO {
   slotType?: "setup" | "event" | "cleanup" | "full_day";
   numberOfGuests?: number;
   leadStatus?: "cold" | "warm" | "hot";
+  foodPackage?: IFoodPackageSnapshot;
   package?: {
     name: string;
     description?: string;

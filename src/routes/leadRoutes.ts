@@ -29,7 +29,7 @@ const packageSchema = z.object({
  * Service schema
  */
 const serviceSchema = z.object({
-  service: z.string().trim().min(1, "Service ID is required"),
+  service: z.string().trim().min(1, "Service nameis required"),
   vendor: z
     .object({
       name: z.string().optional(),
@@ -39,6 +39,28 @@ const serviceSchema = z.object({
     })
     .optional(),
   price: z.number().min(0, "Price must be positive").default(0),
+});
+
+const foodItemSchema = z.object({
+  menuItemId: z.string().optional(),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  pricePerPerson: z.number().min(0),
+  isCustom: z.boolean(),
+});
+const foodSectionSchema = z.object({
+  sectionName: z.string().min(1),
+  selectionType: z.enum(["free", "limit", "all_included"]),
+  maxSelectable: z.number().optional(),
+  items: z.array(foodItemSchema).min(1),
+  sectionTotalPerPerson: z.number().min(0),
+});
+const foodPackageSchema = z.object({
+  sourcePackageId: z.string().optional(),
+  name: z.string().min(1),
+  isCustomised: z.boolean(),
+  sections: z.array(foodSectionSchema).min(1),
+  totalPricePerPerson: z.number().min(0),
 });
 
 const selectedMenuItemSchema = z.object({
@@ -69,6 +91,7 @@ const createLeadSchema = z
     slotType: z
       .enum(["setup", "event", "cleanup", "full_day"])
       .default("event"),
+    foodPackage: foodPackageSchema.optional(),
     package: packageSchema.optional(),
     services: z.array(serviceSchema).optional(),
     notes: z.string().optional(),
@@ -102,6 +125,7 @@ const updateLeadSchema = z
     eventStartDateTime: z.coerce.date().optional(),
     eventEndDateTime: z.coerce.date().optional(),
     slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
+    foodPackage: foodPackageSchema.optional(),
     package: packageSchema.optional(),
     services: z.array(serviceSchema).optional(),
     selectedMenu: z.array(selectedMenuSectionSchema).optional(),

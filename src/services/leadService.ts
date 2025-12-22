@@ -1,6 +1,6 @@
 import { Lead } from "../models/Lead";
 import { ILead } from "../types/lead-types";
-import { oid } from "../utils/helper";
+import { oid, recalcFoodPackage } from "../utils/helper";
 import BlackoutDayService from "./blackoutDayService";
 
 export class LeadService {
@@ -9,10 +9,11 @@ export class LeadService {
    */
   async createLead(leadData: Partial<ILead>): Promise<ILead> {
     try {
-
-      console.log("Creating lead with data:", leadData);
-      // Check for blackout day conflicts
-      if (leadData.venueId && leadData.eventStartDateTime && leadData.eventEndDateTime) {
+      if (
+        leadData.venueId &&
+        leadData.eventStartDateTime &&
+        leadData.eventEndDateTime
+      ) {
         const conflictResult = await BlackoutDayService.checkBlackoutConflict(
           leadData.venueId.toString(),
           leadData.eventStartDateTime,
@@ -20,25 +21,37 @@ export class LeadService {
         );
 
         if (conflictResult.hasConflict) {
-          const conflictDates = conflictResult.conflictingDays?.map(bd =>
-            `${bd.title} (${new Date(bd.startDate).toLocaleDateString()} - ${new Date(bd.endDate).toLocaleDateString()})`
-          ).join(", ");
-          throw new Error(`Cannot create lead. The selected dates conflict with blackout days: ${conflictDates}`);
+          const conflictDates = conflictResult.conflictingDays
+            ?.map(
+              (bd) =>
+                `${bd.title} (${new Date(
+                  bd.startDate
+                ).toLocaleDateString()} - ${new Date(
+                  bd.endDate
+                ).toLocaleDateString()})`
+            )
+            .join(", ");
+          throw new Error(
+            `Cannot create lead. The selected dates conflict with blackout days: ${conflictDates}`
+          );
         }
+      }
+
+      if (leadData.foodPackage) {
+        leadData.foodPackage = recalcFoodPackage(leadData.foodPackage);
       }
 
       const lead = new Lead(leadData);
       await lead.save();
 
-      // Populate and return
       await lead.populate([
         { path: "venueId", select: "venueName venueType address" },
         { path: "createdBy", select: "_id email firstName lastName" },
-        { path: "updatedBy", select: "_id email firstName lastName" }
+        { path: "updatedBy", select: "_id email firstName lastName" },
       ]);
 
       return lead;
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error creating lead: ${error.message}`);
     }
   }
@@ -53,7 +66,7 @@ export class LeadService {
         .populate("createdBy", "_id email firstName lastName")
         .populate("updatedBy", "_id email firstName lastName");
       return lead;
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error fetching lead: ${error.message}`);
     }
   }
@@ -93,18 +106,19 @@ export class LeadService {
         .sort({ createdAt: -1 })
         .limit(filters?.limit || 50)
         .skip(filters?.skip || 0)
+        .populate("foodPackage")
         .populate("venueId", "venueName venueType")
         .populate("createdBy", "_id email firstName lastName")
         .populate("updatedBy", "_id email firstName lastName");
 
-        console.log(
-          `Fetched ${leads.length} leads for venue ${venueId} with filters:`,
-          filters
-        );
-        console.log(`Total leads : ${leads}`);
+      console.log(
+        `Fetched ${leads.length} leads for venue ${venueId} with filters:`,
+        filters
+      );
+      console.log(`Total leads : ${leads}`);
 
       return { leads, total };
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error fetching leads by venue: ${error.message}`);
     }
   }
@@ -154,7 +168,7 @@ export class LeadService {
         .populate("updatedBy", "_id email firstName lastName");
 
       return { leads, total };
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error fetching leads by business: ${error.message}`);
     }
   }
@@ -167,7 +181,9 @@ export class LeadService {
     updateData: Partial<ILead>
   ): Promise<ILead | null> {
     try {
-      console.log("Updating lead:", leadId, updateData);
+      if (updateData.foodPackage) {
+        updateData.foodPackage = recalcFoodPackage(updateData.foodPackage);
+      }
       const lead = await Lead.findByIdAndUpdate(
         leadId,
         { ...updateData, updatedAt: new Date() },
@@ -178,7 +194,7 @@ export class LeadService {
         .populate("updatedBy", "_id email firstName lastName");
 
       return lead;
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error updating lead: ${error.message}`);
     }
   }
@@ -202,7 +218,7 @@ export class LeadService {
         .populate("updatedBy", "_id email firstName lastName");
 
       return lead;
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error updating lead status: ${error.message}`);
     }
   }
@@ -214,7 +230,7 @@ export class LeadService {
     try {
       const result = await Lead.findByIdAndDelete(leadId);
       return !!result;
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error deleting lead: ${error.message}`);
     }
   }
@@ -252,7 +268,7 @@ export class LeadService {
         .populate("updatedBy", "_id email firstName lastName");
 
       return leads;
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error searching leads: ${error.message}`);
     }
   }
@@ -289,7 +305,7 @@ export class LeadService {
         .populate("updatedBy", "_id email firstName lastName");
 
       return leads;
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error fetching leads by date range: ${error.message}`);
     }
   }
@@ -315,11 +331,10 @@ export class LeadService {
       });
 
       return { total, cold, warm, hot, upcomingEvents };
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error fetching lead statistics: ${error.message}`);
     }
   }
-
 
   /**
    * Bulk update lead statuses
@@ -336,7 +351,7 @@ export class LeadService {
       );
 
       return result.modifiedCount;
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(`Error bulk updating lead status: ${error.message}`);
     }
   }
