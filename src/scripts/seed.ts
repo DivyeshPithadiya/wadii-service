@@ -2,12 +2,15 @@ import mongoose from "mongoose";
 import { User } from "../models/User";
 import { PasswordUtils } from "../utils/password";
 
-const MONGO_URI =
-  "mongodb+srv://divyeshpithadiya:8aKA8RWQRN3xsZg@techsolution.pidwsxo.mongodb.net/?retryWrites=true&w=majority&appName=TechSolution"; // align with your app DB!
+const MONGO_URI = process.env.MONGO_URI || "";
 
+if (!MONGO_URI) {
+  console.error(" MONGO_URI environment variable is not defined");
+}
+  
 async function seed() {
   await mongoose.connect(MONGO_URI);
-  console.log("✅ Connected to DB:", MONGO_URI);
+  console.log(" Connected to DB:", MONGO_URI);
 
   const pwHash = await PasswordUtils.hashPassword("password123");
 

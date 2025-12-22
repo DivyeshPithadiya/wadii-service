@@ -81,6 +81,42 @@ const leadSchema = new Schema<ILead>(
           required: true,
           trim: true,
         },
+        bankDetails: {
+          type: {
+            accountNumber: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            accountHolderName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            ifscCode: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            bankName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            branchName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            upiId: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            _id: false,
+          },
+          required: false,
+        },
       },
       required: false,
     },
@@ -109,6 +145,42 @@ const leadSchema = new Schema<ILead>(
               required: false,
               trim: true,
             },
+            bankDetails: {
+              type: {
+                accountNumber: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                accountHolderName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                ifscCode: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                bankName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                branchName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                upiId: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                _id: false,
+              },
+              required: false,
+            },
           },
           required: false,
         },
@@ -118,6 +190,39 @@ const leadSchema = new Schema<ILead>(
           min: 0,
           default: 0,
         },
+      },
+    ],
+    selectedMenu: [
+      {
+        sectionName: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        selectionType: {
+          type: String,
+          enum: ["free", "limit", "all_included"],
+          required: true,
+        },
+        selectedItems: [
+          {
+            name: {
+              type: String,
+              required: true,
+              trim: true,
+            },
+            description: {
+              type: String,
+              trim: true,
+            },
+            priceAdjustment: {
+              type: Number,
+              default: 0,
+            },
+            _id: false,
+          },
+        ],
+        _id: false,
       },
     ],
     // DateTime Range (Updated Structure)

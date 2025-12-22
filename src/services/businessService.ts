@@ -70,7 +70,7 @@ export class BusinessService {
   ): Promise<(IBusiness & { venueCount: number; ownerName: string })[]> {
     const query: any = { isDeleted: false, ...filters };
 
-    // ✅ Shared aggregation stages for both developer & non-developer
+    // Shared aggregation stages for both developer & non-developer
     const basePipeline = [
       { $match: query },
       {
@@ -105,12 +105,12 @@ export class BusinessService {
       { $sort: { createdAt: -1 as -1 } },
     ];
 
-    // ✅ Developer can view all businesses
+    // Developer can view all businesses
     if (userRole?.role === "developer") {
       return Business.aggregate(basePipeline);
     }
 
-    // ✅ Normal user: only businesses linked to them
+    // Normal user: only businesses linked to them
     const roles = await UserBusinessRole.find({
       userId: new Types.ObjectId(userId),
     })

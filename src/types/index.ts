@@ -38,6 +38,23 @@ export interface IBusiness extends Document<Types.ObjectId> {
   updatedBy?: Types.ObjectId | string;
 }
 
+// Food Menu Interfaces
+export interface IFoodMenuItem {
+  _id?: Types.ObjectId;
+  name: string;
+  description?: string;
+  isAvailable: boolean;
+  priceAdjustment?: number;
+}
+
+export interface IFoodMenuSection {
+  _id?: Types.ObjectId;
+  sectionName: string;
+  selectionType: "free" | "limit" | "all_included";
+  maxSelectable?: number;
+  items: IFoodMenuItem[];
+}
+
 export interface IVenue extends Document<Types.ObjectId> {
   _id: Types.ObjectId;
   businessId: Types.ObjectId;
@@ -64,10 +81,19 @@ export interface IVenue extends Document<Types.ObjectId> {
     priceType: "flat" | "per_guest";
     inclusions?: [""];
   }>;
+  foodMenu?: IFoodMenuSection[];
   cateringServiceVendor?: Array<{
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   }>;
   services?: Array<{
     service: string;
@@ -75,6 +101,14 @@ export interface IVenue extends Document<Types.ObjectId> {
       name: string;
       email: string;
       phone: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     }>;
   }>;
   bookingPreferences?: {

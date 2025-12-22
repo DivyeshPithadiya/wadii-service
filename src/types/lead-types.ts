@@ -1,5 +1,17 @@
 import { Document, Types } from "mongoose";
 
+export interface ISelectedMenuItem {
+  name: string;
+  description?: string;
+  priceAdjustment?: number;
+}
+
+export interface ISelectedMenuSection {
+  sectionName: string;
+  selectionType: "free" | "limit" | "all_included";
+  selectedItems: ISelectedMenuItem[];
+}
+
 export interface ILead extends Document {
   _id: Types.ObjectId;
   venueId: Types.ObjectId;
@@ -22,6 +34,14 @@ export interface ILead extends Document {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   };
   services?: Array<{
     service: string;
@@ -29,9 +49,18 @@ export interface ILead extends Document {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
+  selectedMenu?: ISelectedMenuSection[];
   notes?: string;
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
@@ -62,6 +91,14 @@ export interface CreateLeadDTO {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   };
   services?: Array<{
     service: string;
@@ -69,6 +106,14 @@ export interface CreateLeadDTO {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
@@ -97,6 +142,14 @@ export interface UpdateLeadDTO {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   };
   services?: Array<{
     service: string;
@@ -104,6 +157,14 @@ export interface UpdateLeadDTO {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
@@ -149,8 +210,16 @@ export interface BusinessLeadStatsResponse extends LeadStatsResponse {
   }>;
 }
 
+// User info for populated fields
+export interface IUserInfo {
+  _id: Types.ObjectId;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
 // Lead with populated fields
-export interface ILeadPopulated extends Omit<ILead, "venueId" | "businessId"> {
+export interface ILeadPopulated extends Omit<ILead, "venueId" | "businessId" | "createdBy" | "updatedBy"> {
   venueId: {
     _id: Types.ObjectId;
     venueName: string;
@@ -167,4 +236,6 @@ export interface ILeadPopulated extends Omit<ILead, "venueId" | "businessId"> {
     _id: Types.ObjectId;
     businessName: string;
   };
+  createdBy?: IUserInfo;
+  updatedBy?: IUserInfo;
 }

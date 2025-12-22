@@ -115,7 +115,7 @@ bookingRoutes.get(
 );
 
 /**
- * Delete booking (hard delete)
+ * Delete booking (soft delete)
  * DELETE /api/bookings/:venueId/booking/:bookingId
  * Required: booking.delete permission
  */
@@ -123,6 +123,28 @@ bookingRoutes.delete(
   "/:venueId/booking/:bookingId",
   requirePerm(ROLE_PERMS.BOOKING_DELETE),
   BookingController.deleteBooking
+);
+
+/**
+ * Get deleted bookings (admin/dev only)
+ * GET /api/bookings/deleted
+ * Required: booking.read permission
+ */
+bookingRoutes.get(
+  "/deleted",
+  requirePerm(ROLE_PERMS.BOOKING_READ),
+  BookingController.getDeletedBookings
+);
+
+/**
+ * Restore a soft-deleted booking
+ * POST /api/bookings/:bookingId/restore
+ * Required: booking.update permission
+ */
+bookingRoutes.post(
+  "/:bookingId/restore",
+  requirePerm(ROLE_PERMS.BOOKING_UPDATE),
+  BookingController.restoreBooking
 );
 
 export default bookingRoutes;

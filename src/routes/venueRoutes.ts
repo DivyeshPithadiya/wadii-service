@@ -6,19 +6,15 @@ import { VenueController } from "../controllers/venueController";
 import { authMiddleware } from "../middlewares/auth";
 import { rolesMiddleware, requirePerm, ROLE_PERMS } from "../middlewares/roles";
 import { validate } from "../middlewares/validate";
-import { venueValidationSchemas } from "../utils/validator";
+import { venueValidationSchemas, bankDetailsSchema } from "../utils/validator";
 
 const venueRoutes = Router();
-
-
-
-
-
 
 const vendorSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Valid email is required"),
   phone: z.string().min(10, "Valid phone number is required"),
+  bankDetails: bankDetailsSchema.optional(),
 });
 
 const foodPackageSchema = z.object({
@@ -196,8 +192,6 @@ venueRoutes.post(
 // Remove food package - needs venue.update
 venueRoutes.delete(
   "/:venueId/packages/:packageId",
-  validate("params", packageParam),
-  // validate("body", deletePackageSchema),
   requirePerm(ROLE_PERMS.VENUE_UPDATE),
   VenueController.removeFoodPackage
 );

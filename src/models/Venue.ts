@@ -86,6 +86,48 @@ const venueSchema = new Schema<IVenue>(
         },
       },
     ],
+    foodMenu: [
+      {
+        sectionName: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        selectionType: {
+          type: String,
+          enum: ["free", "limit", "all_included"],
+          required: true,
+        },
+        maxSelectable: {
+          type: Number,
+          min: 1,
+          required: function (this: any) {
+            return this.selectionType === "limit";
+          },
+        },
+        items: [
+          {
+            name: {
+              type: String,
+              required: true,
+              trim: true,
+            },
+            description: {
+              type: String,
+              trim: true,
+            },
+            isAvailable: {
+              type: Boolean,
+              default: true,
+            },
+            priceAdjustment: {
+              type: Number,
+              default: 0,
+            },
+          },
+        ],
+      },
+    ],
     cateringServiceVendor: [
       {
         name: {
@@ -103,6 +145,42 @@ const venueSchema = new Schema<IVenue>(
           type: String,
           required: true,
           trim: true,
+        },
+        bankDetails: {
+          type: {
+            accountNumber: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            accountHolderName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            ifscCode: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            bankName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            branchName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            upiId: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            _id: false,
+          },
+          required: false,
         },
       },
     ],
@@ -130,6 +208,42 @@ const venueSchema = new Schema<IVenue>(
               type: String,
               required: true,
               trim: true,
+            },
+            bankDetails: {
+              type: {
+                accountNumber: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                accountHolderName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                ifscCode: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                bankName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                branchName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                upiId: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                _id: false,
+              },
+              required: false,
             },
           },
         ],
@@ -190,6 +304,39 @@ venueSchema.pre("save", function (next) {
   } else {
     next();
   }
+});
+
+// Validation: Food menu validation
+venueSchema.pre("save", function (next) {
+  if (this.foodMenu && this.foodMenu.length > 0) {
+    for (const section of this.foodMenu) {
+      // Validate maxSelectable for "limit" type
+      if (section.selectionType === "limit" && !section.maxSelectable) {
+        return next(
+          new Error(
+            `maxSelectable is required for section "${section.sectionName}" with selectionType "limit"`
+          )
+        );
+      }
+
+      // Validate items is array
+      if (!Array.isArray(section.items)) {
+        return next(
+          new Error(`Items must be an array for section "${section.sectionName}"`)
+        );
+      }
+
+      // Validate unique item names within section
+      const itemNames = section.items.map((item: any) => item.name.toLowerCase());
+      const uniqueNames = new Set(itemNames);
+      if (itemNames.length !== uniqueNames.size) {
+        return next(
+          new Error(`Duplicate item names found in section "${section.sectionName}"`)
+        );
+      }
+    }
+  }
+  next();
 });
 
 export const Venue = mongoose.model<IVenue>("Venue", venueSchema);

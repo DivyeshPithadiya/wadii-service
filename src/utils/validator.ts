@@ -5,6 +5,15 @@ export const objectId = z.string().regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
 
 export const urlString = z.string().url("Invalid URL");
 
+export const bankDetailsSchema = z.object({
+  accountNumber: z.string().optional(),
+  accountHolderName: z.string().optional(),
+  ifscCode: z.string().optional(),
+  bankName: z.string().optional(),
+  branchName: z.string().optional(),
+  upiId: z.string().optional(),
+});
+
 // ============== User ==============
 export const userValidationSchemas = {
   register: z.object({
@@ -178,6 +187,7 @@ export const venueValidationSchemas = {
           name: z.string(),
           email: z.string().email(),
           phone: z.string(),
+          bankDetails: bankDetailsSchema.optional(),
         })
       )
       .optional(),
@@ -190,6 +200,7 @@ export const venueValidationSchemas = {
               name: z.string(),
               email: z.string().email(),
               phone: z.string(),
+              bankDetails: bankDetailsSchema.optional(),
             })
           ),
         })
@@ -248,6 +259,7 @@ export const venueValidationSchemas = {
           name: z.string(),
           email: z.string().email(),
           phone: z.string(),
+          bankDetails: bankDetailsSchema.optional(),
         })
       )
       .optional(),
@@ -260,6 +272,7 @@ export const venueValidationSchemas = {
               name: z.string(),
               email: z.string().email(),
               phone: z.string(),
+              bankDetails: bankDetailsSchema.optional(),
             })
           ),
         })

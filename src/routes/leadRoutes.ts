@@ -5,7 +5,7 @@ import { LeadController } from "../controllers/leadController";
 import { authMiddleware } from "../middlewares/auth";
 import { rolesMiddleware, requirePerm, ROLE_PERMS } from "../middlewares/roles";
 import { validate } from "../middlewares/validate";
-import { objectId } from "../utils/validator";
+import { objectId, bankDetailsSchema } from "../utils/validator";
 
 const leadRoutes = Router();
 
@@ -35,58 +35,61 @@ const serviceSchema = z.object({
       name: z.string().optional(),
       email: z.string().email().optional(),
       phone: z.string().optional(),
+      bankDetails: bankDetailsSchema.optional(),
     })
     .optional(),
   price: z.number().min(0, "Price must be positive").default(0),
 });
 
-const eventDateRangeSchema = z
+const selectedMenuItemSchema = z.object({
+  name: z.string().min(1, "Item name is required"),
+  description: z.string().optional(),
+  priceAdjustment: z.number().min(0),
+});
+
+const selectedMenuSectionSchema = z.object({
+  sectionName: z.string().min(1, "Section name is required"),
+  selectionType: z.enum(["free", "limit", "all_included"]),
+  selectedItems: z
+    .array(selectedMenuItemSchema)
+    .min(1, "At least one item is required"),
+});
+
+const createLeadSchema = z
   .object({
-    startDate: z
-      .string()
-      .trim()
-      .min(1, "Start date is required")
-      .transform((val) => new Date(val)),
-    endDate: z
-      .string()
-      .trim()
-      .min(1, "End date is required")
-      .transform((val) => new Date(val)),
+    venueId: objectId,
+    clientName: z.string().min(1, "Client name is required"),
+    contactNo: z.string().min(1, "Contact number is required"),
+    email: z.string().email("Invalid email format"),
+    occasionType: z.string().min(1, "Occasion type is required"),
+    numberOfGuests: z.number().min(1, "Number of guests must be at least 1"),
+    leadStatus: z.enum(["cold", "warm", "hot"]).default("cold"),
+    eventStartDateTime: z.coerce.date(),
+    eventEndDateTime: z.coerce.date(),
+    slotType: z
+      .enum(["setup", "event", "cleanup", "full_day"])
+      .default("event"),
+    package: packageSchema.optional(),
+    services: z.array(serviceSchema).optional(),
+    notes: z.string().optional(),
+    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
+    cateringServiceVendor: z
+      .object({
+        name: z.string(),
+        email: z.string().email(),
+        phone: z.string(),
+        bankDetails: bankDetailsSchema.optional(),
+      })
+      .optional(),
   })
-  .refine((data) => data.endDate >= data.startDate, {
-    message: "End date must be after or equal to start date",
-    path: ["endDate"],
-  });
-
-
-const createLeadSchema = z.object({
-  venueId: objectId,
-  clientName: z.string().min(1, "Client name is required"),
-  contactNo: z.string().min(1, "Contact number is required"),
-  email: z.string().email("Invalid email format"),
-  occasionType: z.string().min(1, "Occasion type is required"),
-  numberOfGuests: z.number().min(1, "Number of guests must be at least 1"),
-  leadStatus: z.enum(["cold", "warm", "hot"]).default("cold"),
-  eventStartDateTime: z.coerce.date(),
-  eventEndDateTime: z.coerce.date(),
-  slotType: z.enum(["setup", "event", "cleanup", "full_day"]).default("event"),
-  package: packageSchema.optional(),
-  services: z.array(serviceSchema).optional(),
-  notes: z.string().optional(),
-  cateringServiceVendor: z
-    .object({
-      name: z.string(),
-      email: z.string().email(),
-      phone: z.string(),
-    })
-    .optional(),
-}).refine(
-  (data) => new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime),
-  {
-    message: "End datetime must be after start datetime",
-    path: ["eventEndDateTime"],
-  }
-);
+  .refine(
+    (data) =>
+      new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime),
+    {
+      message: "End datetime must be after start datetime",
+      path: ["eventEndDateTime"],
+    }
+  );
 
 const updateLeadSchema = z
   .object({
@@ -101,11 +104,13 @@ const updateLeadSchema = z
     slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
     package: packageSchema.optional(),
     services: z.array(serviceSchema).optional(),
+    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
     cateringServiceVendor: z
       .object({
         name: z.string(),
         email: z.string().email(),
         phone: z.string(),
+        bankDetails: bankDetailsSchema.optional(),
       })
       .optional(),
     notes: z.string().optional(),

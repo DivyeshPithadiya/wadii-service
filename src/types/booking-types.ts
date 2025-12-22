@@ -1,6 +1,18 @@
 // types/booking-types.ts
 import { Document, Types } from "mongoose";
 
+export interface ISelectedMenuItem {
+  name: string;
+  description?: string;
+  priceAdjustment?: number;
+}
+
+export interface ISelectedMenuSection {
+  sectionName: string;
+  selectionType: "free" | "limit" | "all_included";
+  selectedItems: ISelectedMenuItem[];
+}
+
 export interface IBooking extends Document {
   _id: Types.ObjectId;
   venueId: Types.ObjectId;
@@ -19,11 +31,20 @@ export interface IBooking extends Document {
     description?: string;
     price: number;
     priceType: "flat" | "per_guest";
+    inclusions?: string[];
   };
   cateringServiceVendor?: {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   };
   services?: Array<{
     service: string;
@@ -31,9 +52,18 @@ export interface IBooking extends Document {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
+  selectedMenu?: ISelectedMenuSection[];
   // Payment Details (Booking-specific)
   payment: {
     totalAmount: number;
@@ -49,6 +79,10 @@ export interface IBooking extends Document {
   confirmedAt?: Date | null;
   cancelledAt?: Date | null;
   cancellationReason?: string;
+  // Soft Delete fields
+  isDeleted: boolean;
+  deletedAt?: Date | null;
+  deletedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,11 +105,20 @@ export interface CreateBookingDTO {
     description?: string;
     price: number;
     priceType: "flat" | "per_guest";
+    inclusions?: string[];
   };
   cateringServiceVendor?: {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   };
   services?: Array<{
     service: string;
@@ -83,6 +126,14 @@ export interface CreateBookingDTO {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
@@ -113,11 +164,20 @@ export interface UpdateBookingDTO {
     description?: string;
     price: number;
     priceType: "flat" | "per_guest";
+    inclusions?: string[];
   };
   cateringServiceVendor?: {
     name: string;
     email: string;
     phone: string;
+    bankDetails?: {
+      accountNumber?: string;
+      accountHolderName?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branchName?: string;
+      upiId?: string;
+    };
   };
   services?: Array<{
     service: string;
@@ -125,6 +185,14 @@ export interface UpdateBookingDTO {
       name?: string;
       email?: string;
       phone?: string;
+      bankDetails?: {
+        accountNumber?: string;
+        accountHolderName?: string;
+        ifscCode?: string;
+        bankName?: string;
+        branchName?: string;
+        upiId?: string;
+      };
     };
     price: number;
   }>;
@@ -183,8 +251,16 @@ export interface BusinessBookingStatsResponse extends BookingStatsResponse {
   }>;
 }
 
+// User info for populated fields
+export interface IUserInfo {
+  _id: Types.ObjectId;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
 // Booking with populated fields
-export interface IBookingPopulated extends Omit<IBooking, "venueId" | "leadId"> {
+export interface IBookingPopulated extends Omit<IBooking, "venueId" | "leadId" | "createdBy" | "updatedBy"> {
   venueId: {
     _id: Types.ObjectId;
     venueName: string;
@@ -202,4 +278,6 @@ export interface IBookingPopulated extends Omit<IBooking, "venueId" | "leadId"> 
     clientName: string;
     leadStatus: string;
   };
+  createdBy?: IUserInfo;
+  updatedBy?: IUserInfo;
 }

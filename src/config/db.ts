@@ -14,20 +14,22 @@ class Database {
 
   public async connect(): Promise<void> {
     try {
-      const mongoURI =
-        process.env.MONGO_URI ||
-        "mongodb+srv://divyeshpithadiya:8aKA8RWQRN3xsZg@techsolution.pidwsxo.mongodb.net/?retryWrites=true&w=majority&appName=TechSolution"; 
+      const mongoURI = process.env.MONGO_URI;
+
+      if (!mongoURI) {
+        throw new Error("MONGO_URI environment variable is not defined");
+      }
 
       await mongoose.connect(mongoURI);
 
       console.log("📦 MongoDB connected successfully");
 
       mongoose.connection.on("error", (error) => {
-        console.error("❌ MongoDB connection error:", error);
+        console.error(" MongoDB connection error:", error);
       });
 
       mongoose.connection.on("disconnected", () => {
-        console.log("⚠️ MongoDB disconnected");
+        console.log(" MongoDB disconnected");
       });
 
       process.on("SIGINT", async () => {
@@ -36,7 +38,7 @@ class Database {
         process.exit(0);
       });
     } catch (error) {
-      console.error("❌ MongoDB connection failed:", error);
+      console.error(" MongoDB connection failed:", error);
       process.exit(1);
     }
   }

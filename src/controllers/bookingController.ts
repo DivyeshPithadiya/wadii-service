@@ -1,6 +1,8 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { BookingService } from "../services/bookingService";
+import { TransactionService } from "../services/transactionService";
+import { BookingPOService } from "../services/bookingPOService";
 import {
   CreateBookingReq,
   GetBookingReq,
@@ -14,7 +16,6 @@ import {
   BookingQueryFilters,
 } from "../types/booking-request-types";
 import { parseNumberParam } from "../utils/helper";
-import { success } from "zod";
 
 const oid = (id: string) => new Types.ObjectId(id);
 
@@ -27,15 +28,29 @@ export class BookingController {
     res: Response
   ): Promise<void> {
     try {
+      console.log("---- CREATE BOOKING REQUEST RECEIVED ----");
+      console.log("User:", req.user);
+      console.log("Body:", req.body);
+
       if (!req.user?.userId) {
+        console.log("Unauthorized request: Missing userId");
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
+
       // Check slot availability before creating
       if (!req.body.eventStartDateTime || !req.body.eventEndDateTime) {
-        res.status(400).json({ success: false, message: "Invalid datetime range" });
+        console.log(" Invalid datetime range");
+        res
+          .status(400)
+          .json({ success: false, message: "Invalid datetime range" });
         return;
       }
+
+      console.log("Checking slot availability...");
+      console.log("Venue ID:", req.body.venueId);
+      console.log("Start DateTime:", req.body.eventStartDateTime);
+      console.log("End DateTime:", req.body.eventEndDateTime);
 
       const isAvailable = await BookingService.checkSlotAvailability(
         req.body.venueId,
@@ -43,7 +58,10 @@ export class BookingController {
         new Date(req.body.eventEndDateTime)
       );
 
+      console.log("Slot Available:", isAvailable);
+
       if (!isAvailable) {
+        console.log(" Time slot unavailable");
         res.status(409).json({
           success: false,
           message: "Time slot is not available for this venue",
@@ -58,7 +76,54 @@ export class BookingController {
         leadId: req.body.leadId ? oid(req.body.leadId) : null,
       };
 
+      console.log("Creating booking with data:", bookingData);
+
       const booking = await BookingService.createBooking(bookingData);
+
+      console.log("Booking created successfully");
+      console.log("Booking ID:", booking._id);
+
+      // Create initial transaction if advance amount is provided
+      if (
+        req.body.payment?.advanceAmount &&
+        req.body.payment.advanceAmount > 0
+      ) {
+        console.log("Creating initial transaction for advance payment...");
+        try {
+          await TransactionService.createTransaction({
+            bookingId: booking._id.toString(),
+            amount: req.body.payment.advanceAmount,
+            mode: req.body.payment.paymentMode,
+            status: "success",
+            notes: "Initial advance payment",
+            paidAt: new Date(),
+            createdBy: req.user.userId,
+          });
+          console.log("Initial transaction created");
+        } catch (txnError: any) {
+          console.error(
+            " Warning: Failed to create initial transaction:",
+            txnError.message
+          );
+          // Don't fail the booking creation if transaction creation fails
+        }
+      }
+
+      // Auto-generate POs for the booking
+      console.log("Auto-generating POs for booking...");
+      try {
+        const generatedPOs = await BookingPOService.generatePOsForBooking(
+          booking._id.toString(),
+          req.user.userId
+        );
+        console.log(`✅ ${generatedPOs.length} PO(s) auto-generated successfully`);
+      } catch (poError: any) {
+        console.error(
+          " Warning: Failed to auto-generate POs:",
+          poError.message
+        );
+        // Don't fail the booking creation if PO generation fails
+      }
 
       res.status(201).json({
         success: true,
@@ -66,6 +131,7 @@ export class BookingController {
         data: booking,
       });
     } catch (error: any) {
+      console.error(" Error in createBooking:", error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -163,7 +229,7 @@ export class BookingController {
         console.log("Current Booking:", currentBooking);
 
         if (!currentBooking) {
-          console.log("❌ Booking not found");
+          console.log(" Booking not found");
           res
             .status(404)
             .json({ success: false, message: "Booking not found" });
@@ -179,7 +245,8 @@ export class BookingController {
           : currentBooking.eventEndDateTime;
 
         const isAvailable = await BookingService.checkSlotAvailability(
-          (currentBooking.venueId as any)._id?.toString() || currentBooking.venueId.toString(),
+          (currentBooking.venueId as any)._id?.toString() ||
+            currentBooking.venueId.toString(),
           startDateTime,
           endDateTime,
           bookingId
@@ -188,7 +255,7 @@ export class BookingController {
         console.log("Slot Available:", isAvailable);
 
         if (!isAvailable) {
-          console.log("❌ Time slot unavailable");
+          console.log(" Time slot unavailable");
           res.status(409).json({
             success: false,
             message: "Time slot is not available for this venue",
@@ -202,11 +269,6 @@ export class BookingController {
         updatedBy: oid(req.user.userId),
       };
 
-      // Convert venueId to ObjectId if provided
-      if (req.body.venueId) {
-        updateData.venueId = oid(req.body.venueId);
-      }
-
       console.log("Final Update Data:", updateData);
 
       const booking = await BookingService.updateBooking(bookingId, updateData);
@@ -214,7 +276,7 @@ export class BookingController {
       console.log("Update Result:", booking);
 
       if (!booking) {
-        console.log("❌ Booking not found on update");
+        console.log(" Booking not found on update");
         res.status(404).json({ success: false, message: "Booking not found" });
         return;
       }
@@ -227,7 +289,7 @@ export class BookingController {
         data: booking,
       });
     } catch (error: any) {
-      console.error("❌ Error in updateBooking:", error);
+      console.error(" Error in updateBooking:", error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -385,7 +447,7 @@ export class BookingController {
   }
 
   /**
-   * Delete booking (hard delete)
+   * Delete booking (soft delete)
    */
   static async deleteBooking(
     req: DeleteBookingReq,
@@ -399,7 +461,10 @@ export class BookingController {
 
       const { bookingId } = req.params;
 
-      const booking = await BookingService.deleteBooking(bookingId);
+      const booking = await BookingService.deleteBooking(
+        bookingId,
+        req.user.userId
+      );
 
       if (!booking) {
         res.status(404).json({ success: false, message: "Booking not found" });
@@ -408,7 +473,68 @@ export class BookingController {
 
       res.status(200).json({
         success: true,
-        message: "Booking deleted successfully",
+        message: "Booking soft deleted successfully",
+        data: booking,
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Get deleted bookings (admin/dev only)
+   */
+  static async getDeletedBookings(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { limit, skip } = req.query;
+
+      const result = await BookingService.getDeletedBookings({
+        limit: limit ? parseInt(limit as string) : undefined,
+        skip: skip ? parseInt(skip as string) : undefined,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result.bookings,
+        pagination: {
+          total: result.total,
+          limit: limit ? parseInt(limit as string) : 50,
+          skip: skip ? parseInt(skip as string) : 0,
+        },
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Restore a soft-deleted booking
+   */
+  static async restoreBooking(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { bookingId } = req.params;
+
+      const booking = await BookingService.restoreBooking(bookingId);
+
+      res.status(200).json({
+        success: true,
+        message: "Booking restored successfully",
         data: booking,
       });
     } catch (error: any) {

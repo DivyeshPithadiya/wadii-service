@@ -3,6 +3,18 @@ import { z } from "zod";
 
 
 /**
+ * Bank details schema
+ */
+const bankDetailsSchema = z.object({
+  accountNumber: z.string().optional(),
+  accountHolderName: z.string().optional(),
+  ifscCode: z.string().optional(),
+  bankName: z.string().optional(),
+  branchName: z.string().optional(),
+  upiId: z.string().optional(),
+});
+
+/**
  * Package schema
  */
 const packageSchema = z.object({
@@ -10,6 +22,7 @@ const packageSchema = z.object({
   description: z.string().optional(),
   price: z.number().min(0, "Price must be positive"),
   priceType: z.enum(["flat", "per_guest"]),
+  inclusions: z.array(z.string()).optional(),
 });
 
 /**
@@ -22,9 +35,24 @@ const serviceSchema = z.object({
       name: z.string().optional(),
       email: z.string().email().optional(),
       phone: z.string().min(10).optional(),
+      bankDetails: bankDetailsSchema.optional(),
     })
     .optional(),
   price: z.number().min(0, "Price must be positive").default(0),
+});
+
+const selectedMenuItemSchema = z.object({
+  name: z.string().min(1, "Item name is required"),
+  description: z.string().optional(),
+  priceAdjustment: z.number().min(0),
+});
+
+const selectedMenuSectionSchema = z.object({
+  sectionName: z.string().min(1, "Section name is required"),
+  selectionType: z.enum(["free", "limit", "all_included"]),
+  selectedItems: z
+    .array(selectedMenuItemSchema)
+    .min(1, "At least one item is required"),
 });
 
 /**
@@ -48,6 +76,7 @@ export const createBookingSchema = z
       .optional(),
     eventStartDateTime: z.coerce.date(),
     eventEndDateTime: z.coerce.date(),
+    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
     slotType: z
       .enum(["setup", "event", "cleanup", "full_day"])
       .default("event"),
@@ -57,9 +86,11 @@ export const createBookingSchema = z
         name: z.string(),
         email: z.string().email(),
         phone: z.string(),
+        bankDetails: bankDetailsSchema.optional(),
       })
       .optional(),
     services: z.array(serviceSchema).optional(),
+
     payment: z.object({
       totalAmount: z.number().min(0, "Total amount must be positive"),
       advanceAmount: z
@@ -95,7 +126,6 @@ export const createBookingSchema = z
  */
 export const updateBookingSchema = z
   .object({
-    venueId: z.string().optional(),
     clientName: z.string().trim().min(1).optional(),
     contactNo: z.string().trim().min(1).optional(),
     email: z.string().trim().toLowerCase().email().optional(),
@@ -108,11 +138,13 @@ export const updateBookingSchema = z
     eventEndDateTime: z.coerce.date().optional(),
     slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
     package: packageSchema.optional(),
+    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
     cateringServiceVendor: z
       .object({
         name: z.string(),
         email: z.string().email(),
         phone: z.string(),
+        bankDetails: bankDetailsSchema.optional(),
       })
       .optional(),
     services: z.array(serviceSchema).optional(),
@@ -135,7 +167,36 @@ export const updateBookingSchema = z
     notes: z.string().optional(),
     internalNotes: z.string().optional(),
   })
-  .partial();
+  .partial()
+  .refine(
+    (data) => {
+      if (
+        data.payment?.advanceAmount !== undefined &&
+        data.payment?.totalAmount !== undefined
+      ) {
+        return data.payment.advanceAmount <= data.payment.totalAmount;
+      }
+      return true;
+    },
+    {
+      message: "Advance amount cannot exceed total amount",
+      path: ["payment", "advanceAmount"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.eventStartDateTime && data.eventEndDateTime) {
+        return (
+          new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime)
+        );
+      }
+      return true;
+    },
+    {
+      message: "End datetime must be after start datetime",
+      path: ["eventEndDateTime"],
+    }
+  );
 
 /**
  * Cancel booking validation schema

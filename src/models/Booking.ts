@@ -1,7 +1,13 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Query } from "mongoose";
 import { IBooking } from "../types/booking-types";
 
-const bookingSchema = new Schema<IBooking>(
+// Define query helpers interface
+interface BookingQueryHelpers {
+  excludeDeleted(): Query<any, IBooking, BookingQueryHelpers> & BookingQueryHelpers;
+  onlyDeleted(): Query<any, IBooking, BookingQueryHelpers> & BookingQueryHelpers;
+}
+
+const bookingSchema = new Schema<IBooking, mongoose.Model<IBooking, BookingQueryHelpers>, {}, BookingQueryHelpers>(
   {
     venueId: {
       type: Schema.Types.ObjectId,
@@ -65,6 +71,12 @@ const bookingSchema = new Schema<IBooking>(
           enum: ["flat", "per_guest"],
           required: true,
         },
+        inclusions: {
+          type: [String],
+          default: [],
+          required: false,
+        },
+        _id: false,
       },
       required: false,
     },
@@ -85,6 +97,41 @@ const bookingSchema = new Schema<IBooking>(
           type: String,
           required: true,
           trim: true,
+        },
+        bankDetails: {
+          type: {
+            accountNumber: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            accountHolderName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            ifscCode: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            bankName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            branchName: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+            upiId: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+          },
+          required: false,
         },
       },
       required: false,
@@ -114,6 +161,41 @@ const bookingSchema = new Schema<IBooking>(
               required: false,
               trim: true,
             },
+            bankDetails: {
+              type: {
+                accountNumber: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                accountHolderName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                ifscCode: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                bankName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                branchName: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+                upiId: {
+                  type: String,
+                  required: false,
+                  trim: true,
+                },
+              },
+              required: false,
+            },
           },
           required: false,
         },
@@ -123,6 +205,39 @@ const bookingSchema = new Schema<IBooking>(
           min: 0,
           default: 0,
         },
+      },
+    ],
+    selectedMenu: [
+      {
+        sectionName: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        selectionType: {
+          type: String,
+          enum: ["free", "limit", "all_included"],
+          required: true,
+        },
+        selectedItems: [
+          {
+            name: {
+              type: String,
+              required: true,
+              trim: true,
+            },
+            description: {
+              type: String,
+              trim: true,
+            },
+            priceAdjustment: {
+              type: Number,
+              default: 0,
+            },
+            _id: false,
+          },
+        ],
+        _id: false,
       },
     ],
     // DateTime Range (Updated Structure)
@@ -150,7 +265,7 @@ const bookingSchema = new Schema<IBooking>(
       enum: ["setup", "event", "cleanup", "full_day"],
       default: "event",
     },
-    // Payment Details (Booking-specific)
+    // Payment Details (Summary only - actual transactions in Transaction model)
     payment: {
       totalAmount: {
         type: Number,
@@ -161,16 +276,19 @@ const bookingSchema = new Schema<IBooking>(
         type: Number,
         default: 0,
         min: 0,
+        // This is calculated from Transaction model, maintained for backward compatibility
       },
       paymentStatus: {
         type: String,
         enum: ["unpaid", "partially_paid", "paid"],
         default: "unpaid",
+        // This is calculated from Transaction model
       },
       paymentMode: {
         type: String,
         enum: ["cash", "card", "upi", "bank_transfer", "cheque", "other"],
         required: true,
+        // This represents the primary/default payment mode
       },
     },
     notes: {
@@ -199,6 +317,21 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       default: "",
     },
+    // Soft Delete fields
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+    deletedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -221,6 +354,18 @@ bookingSchema.index({ "payment.paymentStatus": 1 });
 bookingSchema.index({ venueId: 1, bookingStatus: 1 });
 bookingSchema.index({ venueId: 1, eventStartDateTime: 1 });
 bookingSchema.index({ venueId: 1, "payment.paymentStatus": 1 });
+bookingSchema.index({ isDeleted: 1, createdAt: -1 });
+bookingSchema.index({ venueId: 1, isDeleted: 1 });
+
+// Query helper to exclude deleted bookings by default
+bookingSchema.query.excludeDeleted = function(this: Query<any, IBooking, BookingQueryHelpers> & BookingQueryHelpers) {
+  return this.where({ isDeleted: false });
+};
+
+// Query helper to include only deleted bookings
+bookingSchema.query.onlyDeleted = function(this: Query<any, IBooking, BookingQueryHelpers> & BookingQueryHelpers) {
+  return this.where({ isDeleted: true });
+};
 
 // Pre-save hook for payment status
 bookingSchema.pre("save", function (next) {

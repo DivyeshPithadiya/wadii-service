@@ -45,9 +45,7 @@ export interface UpdateBookingReq extends Request {
   params: {
     bookingId: string;
   };
-  body: Partial<IBooking> & {
-    venueId?: string;
-  };
+  body: Partial<IBooking>;
   user?: {
     userId: string;
   };
@@ -91,7 +89,8 @@ export interface CheckAvailabilityReq extends Request {
     venueId: string;
   };
   query: {
-    date: string;
+    eventStartDateTime: string;
+    eventEndDateTime: string;
     excludeBookingId?: string;
   };
 }

@@ -57,7 +57,7 @@ async function debugPermissions() {
       const decoded = JWTUtils.verifyToken(testToken);
       console.log(`   Decoded token:`, decoded);
     } else {
-      console.log("   ❌ No owner user found to test with");
+      console.log("   No owner user found to test with");
     }
 
     console.log("\n5. 🔧 Suggested Fixes:");
@@ -66,7 +66,7 @@ async function debugPermissions() {
     console.log("   c) Make sure ROLE_TO_PERMS includes manager.* permissions for owners");
 
   } catch (error) {
-    console.error("❌ Debug failed:", error);
+    console.error("Debug failed:", error);
   } finally {
     process.exit(0);
   }

@@ -32,7 +32,7 @@ export const errorHandler = (
     message = "Duplicate field value";
   }
 
-  console.error(`❌ Error: ${message}`, {
+  console.error(` Error: ${message}`, {
     path: req.path,
     method: req.method,
     statusCode,
