@@ -14,16 +14,7 @@ leadRoutes.use(authMiddleware, rolesMiddleware);
 
 // ----- Validation Schemas -----
 
-/**
- * Package schema
- */
-const packageSchema = z.object({
-  packageId: z.string().optional(),
-  descrition: z.string().optional(),
-  name: z.string().trim().min(1, "Package name is required"),
-  price: z.number().min(0, "Price must be positive"),
-  priceType: z.enum(["flat", "per_guest"]),
-});
+
 
 /**
  * Service schema
@@ -58,23 +49,10 @@ const foodSectionSchema = z.object({
 const foodPackageSchema = z.object({
   sourcePackageId: z.string().optional(),
   name: z.string().min(1),
-  isCustomised: z.boolean(),
+  isCustomised: z.boolean().optional(),
   sections: z.array(foodSectionSchema).min(1),
+  inclusions: z.array(z.string()).optional(),
   totalPricePerPerson: z.number().min(0),
-});
-
-const selectedMenuItemSchema = z.object({
-  name: z.string().min(1, "Item name is required"),
-  description: z.string().optional(),
-  priceAdjustment: z.number().min(0),
-});
-
-const selectedMenuSectionSchema = z.object({
-  sectionName: z.string().min(1, "Section name is required"),
-  selectionType: z.enum(["free", "limit", "all_included"]),
-  selectedItems: z
-    .array(selectedMenuItemSchema)
-    .min(1, "At least one item is required"),
 });
 
 const createLeadSchema = z
@@ -92,10 +70,8 @@ const createLeadSchema = z
       .enum(["setup", "event", "cleanup", "full_day"])
       .default("event"),
     foodPackage: foodPackageSchema.optional(),
-    package: packageSchema.optional(),
     services: z.array(serviceSchema).optional(),
     notes: z.string().optional(),
-    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
     cateringServiceVendor: z
       .object({
         name: z.string(),
@@ -126,9 +102,7 @@ const updateLeadSchema = z
     eventEndDateTime: z.coerce.date().optional(),
     slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
     foodPackage: foodPackageSchema.optional(),
-    package: packageSchema.optional(),
     services: z.array(serviceSchema).optional(),
-    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
     cateringServiceVendor: z
       .object({
         name: z.string(),

@@ -23,6 +23,8 @@ export interface IFoodPackageSnapshot {
   name: string;
   isCustomised: boolean;
   sections: IFoodPackageSection[];
+  defaultPrice: number;
+  inclusions?: string[];
   totalPricePerPerson: number;
 }
 
@@ -53,13 +55,7 @@ export interface IBooking extends Document {
   slotType: "setup" | "event" | "cleanup" | "full_day";
   foodPackage?: IFoodPackageSnapshot;
   foodCostTotal: number;
-  package?: {
-    name: string;
-    description?: string;
-    price: number;
-    priceType: "flat" | "per_guest";
-    inclusions?: string[];
-  };
+
   cateringServiceVendor?: {
     name: string;
     email: string;
@@ -90,7 +86,6 @@ export interface IBooking extends Document {
     };
     price: number;
   }>;
-  selectedMenu?: ISelectedMenuSection[];
   // Payment Details (Booking-specific)
   payment: {
     totalAmount: number;
@@ -126,16 +121,8 @@ export interface CreateBookingDTO {
   bookingStatus?: "pending" | "confirmed" | "cancelled" | "completed";
   eventStartDateTime: Date;
   eventEndDateTime: Date;
-  foodCostTotal: number;
   slotType: "setup" | "event" | "cleanup" | "full_day";
   foodPackage?: IFoodPackageSnapshot;
-  package?: {
-    name: string;
-    description?: string;
-    price: number;
-    priceType: "flat" | "per_guest";
-    inclusions?: string[];
-  };
   cateringServiceVendor?: {
     name: string;
     email: string;
@@ -190,13 +177,6 @@ export interface UpdateBookingDTO {
   numberOfGuests?: number;
   bookingStatus?: "pending" | "confirmed" | "cancelled" | "completed";
   foodPackage?: IFoodPackageSnapshot;
-  package?: {
-    name: string;
-    description?: string;
-    price: number;
-    priceType: "flat" | "per_guest";
-    inclusions?: string[];
-  };
   cateringServiceVendor?: {
     name: string;
     email: string;

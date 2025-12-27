@@ -17,6 +17,8 @@ export class BookingPOService {
     try {
       const booking = await Booking.findById(oid(bookingId));
 
+      console.log("BookingPOService.generatePOsForBooking - booking:", booking);
+
       if (!booking) {
         throw new Error("Booking not found");
       }
@@ -42,18 +44,22 @@ export class BookingPOService {
               description: "Catering Services",
               serviceType: "Catering",
               quantity: booking.numberOfGuests,
-              totalPrice: booking.package?.price || 0,
+              unitPrice: booking.foodPackage?.totalPricePerPerson || 0,
+              totalPrice:
+                (booking.foodPackage?.totalPricePerPerson || 0) *
+                booking.numberOfGuests,
             },
           ],
-          totalAmount: booking.package?.price || 0,
+          totalAmount: booking.foodPackage?.totalPricePerPerson || 0,
           issueDate: new Date(),
           dueDate: new Date(booking.eventStartDateTime),
           notes: `Catering for ${booking.occasionType} - ${booking.numberOfGuests} guests`,
           createdBy,
         };
-
+        console.log("Catering PO data:", cateringPO);
         const po = await PurchaseOrderService.createPurchaseOrder(cateringPO);
         purchaseOrders.push(po);
+        console.log(po, " Catering PO created");
       }
 
       // 2. Generate POs for Service Vendors
@@ -216,6 +222,109 @@ export class BookingPOService {
       };
     } catch (error: any) {
       throw new Error(`Error checking existing POs: ${error.message}`);
+    }
+  }
+
+  /**
+   * Auto-generate Purchase Orders for a booking
+   * Creates POs for catering vendor and all service vendors
+   */
+  static async updatePOsForBooking(
+    bookingId: string,
+    poId: string,
+    createdBy?: string
+  ): Promise<any[]> {
+    try {
+      const booking = await Booking.findById(oid(bookingId));
+
+      console.log("BookingPOService.generatePOsForBooking - booking:", booking);
+
+      if (!booking) {
+        throw new Error("Booking not found");
+      }
+
+      const purchaseOrders: any[] = [];
+
+      if (booking.cateringServiceVendor) {
+        const cateringVendor = booking.cateringServiceVendor;
+
+        const cateringPO: CreatePurchaseOrderInput = {
+          bookingId: booking._id.toString(),
+          venueId: booking.venueId.toString(),
+          vendorType: "catering",
+          vendorDetails: {
+            name: cateringVendor.name,
+            email: cateringVendor.email,
+            phone: cateringVendor.phone,
+            bankDetails: cateringVendor.bankDetails,
+          },
+          vendorReference: "catering",
+          lineItems: [
+            {
+              description: "Catering Services",
+              serviceType: "Catering",
+              quantity: booking.numberOfGuests,
+              unitPrice: booking.foodPackage?.totalPricePerPerson || 0,
+              totalPrice:
+                (booking.foodPackage?.totalPricePerPerson || 0) *
+                booking.numberOfGuests,
+            },
+          ],
+          totalAmount: booking.foodPackage?.totalPricePerPerson || 0,
+          issueDate: new Date(),
+          dueDate: new Date(booking.eventStartDateTime),
+          notes: `Catering for ${booking.occasionType} - ${booking.numberOfGuests} guests`,
+          createdBy,
+        };
+        console.log("Catering PO data:", cateringPO);
+        const po = await PurchaseOrderService.updatePurchaseOrder(
+          poId,
+          cateringPO
+        );
+        purchaseOrders.push(po);
+        console.log(po, " Catering PO created");
+      }
+
+      // 2. Generate POs for Service Vendors
+      if (booking.services && booking.services.length > 0) {
+        for (const service of booking.services) {
+          if (service.vendor) {
+            const servicePO: CreatePurchaseOrderInput = {
+              bookingId: booking._id.toString(),
+              venueId: booking.venueId.toString(),
+              vendorType: "service",
+              vendorDetails: {
+                name: service.vendor.name || "vendor name",
+                email: service.vendor.email,
+                phone: service.vendor.phone,
+                bankDetails: service.vendor.bankDetails,
+              },
+              vendorReference: `service_${service.service}`,
+              lineItems: [
+                {
+                  description: service.service,
+                  serviceType: service.service,
+                  totalPrice: service.price,
+                },
+              ],
+              totalAmount: service.price,
+              issueDate: new Date(),
+              dueDate: new Date(booking.eventStartDateTime),
+              notes: `${service.service} for ${booking.occasionType}`,
+              createdBy,
+            };
+
+            const po = await PurchaseOrderService.createPurchaseOrder(
+              servicePO
+            );
+            purchaseOrders.push(po);
+          }
+        }
+      }
+
+      return purchaseOrders;
+    } catch (error: any) {
+      throw new Error(`Error generating POs for booking: ${error.message}`);
     }
   }
 }

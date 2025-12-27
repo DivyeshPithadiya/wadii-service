@@ -29,9 +29,6 @@ const removeVendorSchema = z.object({
   vendorEmail: z.string().email("Valid email is required"),
 });
 
-const deletePackageSchema = z.object({
-  packageId: z.string().min(1, "Package Id is required"),
-});
 const updatePackageSchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),

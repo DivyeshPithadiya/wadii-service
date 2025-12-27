@@ -53,6 +53,16 @@ const FoodPackageSectionSchema = new Schema(
       required: false,
       min: 1,
     },
+    inclusions: {
+      type: [String],
+      default: [],
+      required: false,
+    },
+    defaultPrice: {
+      type: Number,
+      required: false,
+      min: 0,
+    },
     items: {
       type: [FoodItemSchema],
       default: [],
@@ -146,69 +156,69 @@ const bookingSchema = new Schema<
       type: FoodPackageSchema,
       required: false,
     },
-    package: {
-      type: {
-        name: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        description: {
-          type: String,
-          required: false,
-        },
-        price: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        priceType: {
-          type: String,
-          enum: ["flat", "per_guest"],
-          required: true,
-        },
-        inclusions: {
-          type: [String],
-          default: [],
-          required: false,
-        },
-        selectedMenu: [
-          {
-            sectionName: {
-              type: String,
-              required: true,
-              trim: true,
-            },
-            selectionType: {
-              type: String,
-              enum: ["free", "limit", "all_included"],
-              required: true,
-            },
-            selectedItems: [
-              {
-                name: {
-                  type: String,
-                  required: true,
-                  trim: true,
-                },
-                description: {
-                  type: String,
-                  trim: true,
-                },
-                priceAdjustment: {
-                  type: Number,
-                  default: 0,
-                },
-                _id: false,
-              },
-            ],
-            _id: false,
-          },
-        ],
-        _id: false,
-      },
-      required: false,
-    },
+    // package: {
+    //   type: {
+    //     name: {
+    //       type: String,
+    //       required: true,
+    //       trim: true,
+    //     },
+    //     description: {
+    //       type: String,
+    //       required: false,
+    //     },
+    //     price: {
+    //       type: Number,
+    //       required: true,
+    //       min: 0,
+    //     },
+    //     priceType: {
+    //       type: String,
+    //       enum: ["flat", "per_guest"],
+    //       required: true,
+    //     },
+    //     inclusions: {
+    //       type: [String],
+    //       default: [],
+    //       required: false,
+    //     },
+    //     selectedMenu: [
+    //       {
+    //         sectionName: {
+    //           type: String,
+    //           required: true,
+    //           trim: true,
+    //         },
+    //         selectionType: {
+    //           type: String,
+    //           enum: ["free", "limit", "all_included"],
+    //           required: true,
+    //         },
+    //         selectedItems: [
+    //           {
+    //             name: {
+    //               type: String,
+    //               required: true,
+    //               trim: true,
+    //             },
+    //             description: {
+    //               type: String,
+    //               trim: true,
+    //             },
+    //             priceAdjustment: {
+    //               type: Number,
+    //               default: 0,
+    //             },
+    //             _id: false,
+    //           },
+    //         ],
+    //         _id: false,
+    //       },
+    //     ],
+    //     _id: false,
+    //   },
+    //   required: false,
+    // },
     cateringServiceVendor: {
       type: {
         name: {
@@ -336,39 +346,39 @@ const bookingSchema = new Schema<
         },
       },
     ],
-    selectedMenu: [
-      {
-        sectionName: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        selectionType: {
-          type: String,
-          enum: ["free", "limit", "all_included"],
-          required: true,
-        },
-        selectedItems: [
-          {
-            name: {
-              type: String,
-              required: true,
-              trim: true,
-            },
-            description: {
-              type: String,
-              trim: true,
-            },
-            priceAdjustment: {
-              type: Number,
-              default: 0,
-            },
-            _id: false,
-          },
-        ],
-        _id: false,
-      },
-    ],
+    // selectedMenu: [
+    //   {
+    //     sectionName: {
+    //       type: String,
+    //       required: true,
+    //       trim: true,
+    //     },
+    //     selectionType: {
+    //       type: String,
+    //       enum: ["free", "limit", "all_included"],
+    //       required: true,
+    //     },
+    //     selectedItems: [
+    //       {
+    //         name: {
+    //           type: String,
+    //           required: true,
+    //           trim: true,
+    //         },
+    //         description: {
+    //           type: String,
+    //           trim: true,
+    //         },
+    //         priceAdjustment: {
+    //           type: Number,
+    //           default: 0,
+    //         },
+    //         _id: false,
+    //       },
+    //     ],
+    //     _id: false,
+    //   },
+    // ],
     // DateTime Range (Updated Structure)
     eventStartDateTime: {
       type: Date,

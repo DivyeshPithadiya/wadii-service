@@ -14,16 +14,6 @@ const bankDetailsSchema = z.object({
   upiId: z.string().optional(),
 });
 
-/**
- * Package schema
- */
-const packageSchema = z.object({
-  name: z.string().trim().min(1, "Package name is required"),
-  description: z.string().optional(),
-  price: z.number().min(0, "Price must be positive"),
-  priceType: z.enum(["flat", "per_guest"]),
-  inclusions: z.array(z.string()).optional(),
-});
 
 /**
  * Service schema
@@ -60,23 +50,14 @@ const foodPackageSchema = z.object({
   sourcePackageId: z.string().optional(),
   name: z.string().min(1),
   isCustomised: z.boolean(),
-  sections: z.array(foodSectionSchema).min(1),
+  sections: z.array(foodSectionSchema).optional(),
   totalPricePerPerson: z.number().min(0),
+  defaultPrice: z.number().min(0).optional(),
+  inclusions: z.array(z.string()).optional(),
 });
 
-const selectedMenuItemSchema = z.object({
-  name: z.string().min(1, "Item name is required"),
-  description: z.string().optional(),
-  priceAdjustment: z.number().min(0),
-});
 
-const selectedMenuSectionSchema = z.object({
-  sectionName: z.string().min(1, "Section name is required"),
-  selectionType: z.enum(["free", "limit", "all_included"]),
-  selectedItems: z
-    .array(selectedMenuItemSchema)
-    .min(1, "At least one item is required"),
-});
+
 
 /**
  * Create booking validation schema
@@ -99,13 +80,8 @@ export const createBookingSchema = z
       .optional(),
     eventStartDateTime: z.coerce.date(),
     eventEndDateTime: z.coerce.date(),
-    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
-    slotType: z
-      .enum(["setup", "event", "cleanup", "full_day"])
-      .default("event"),
 
     foodPackage: foodPackageSchema.optional(),
-    package: packageSchema.optional(),
     cateringServiceVendor: z
       .object({
         name: z.string(),
@@ -163,16 +139,6 @@ export const updateBookingSchema = z
     eventEndDateTime: z.coerce.date().optional(),
     slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
     foodPackage: foodPackageSchema.optional(),
-    package: packageSchema.optional(),
-    selectedMenu: z.array(selectedMenuSectionSchema).optional(),
-    cateringServiceVendor: z
-      .object({
-        name: z.string(),
-        email: z.string().email(),
-        phone: z.string(),
-        bankDetails: bankDetailsSchema.optional(),
-      })
-      .optional(),
     services: z.array(serviceSchema).optional(),
     payment: z
       .object({
