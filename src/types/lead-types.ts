@@ -14,6 +14,7 @@ export interface IFoodPackageSection {
   sectionName: string;
   selectionType: "free" | "limit" | "all_included";
   maxSelectable?: number;
+  defaultPrice?: number;
   items: IFoodPackageItem[];
   sectionTotalPerPerson: number;
 }
@@ -22,6 +23,7 @@ export interface IFoodPackageSnapshot {
   sourcePackageId?: Types.ObjectId;
   name: string;
   isCustomised: boolean;
+  inclusions?: string[];
   sections: IFoodPackageSection[];
   totalPricePerPerson: number;
 }

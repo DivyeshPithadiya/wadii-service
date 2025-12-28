@@ -25,8 +25,47 @@ export class BookingPOService {
 
       const purchaseOrders: any[] = [];
 
-      if (booking.cateringServiceVendor) {
+      if (booking.cateringServiceVendor && booking.foodPackage) {
         const cateringVendor = booking.cateringServiceVendor;
+        const lineItems: any[] = [];
+
+        // Add main catering service line
+        const unitPrice = booking.foodPackage.totalPricePerPerson || 0;
+        const totalPrice = unitPrice * booking.numberOfGuests;
+
+        lineItems.push({
+          description: `Catering Services - ${booking.foodPackage.name}`,
+          serviceType: "Catering",
+          quantity: booking.numberOfGuests,
+          unitPrice: unitPrice,
+          totalPrice: totalPrice,
+        });
+
+        // Add detailed line items for each section if applicable
+        if (booking.foodPackage.sections && booking.foodPackage.sections.length > 0) {
+          for (const section of booking.foodPackage.sections) {
+            if (section.items && section.items.length > 0) {
+              lineItems.push({
+                description: `${section.sectionName} (${section.items.length} items)`,
+                serviceType: section.sectionName,
+                quantity: booking.numberOfGuests,
+                unitPrice: section.sectionTotalPerPerson || 0,
+                totalPrice: (section.sectionTotalPerPerson || 0) * booking.numberOfGuests,
+              });
+            }
+          }
+        }
+
+        // Add inclusions as a line item if present
+        if (booking.foodPackage.inclusions && booking.foodPackage.inclusions.length > 0) {
+          lineItems.push({
+            description: `Inclusions: ${booking.foodPackage.inclusions.join(", ")}`,
+            serviceType: "Inclusions",
+            quantity: 1,
+            unitPrice: 0,
+            totalPrice: 0,
+          });
+        }
 
         const cateringPO: CreatePurchaseOrderInput = {
           bookingId: booking._id.toString(),
@@ -39,18 +78,8 @@ export class BookingPOService {
             bankDetails: cateringVendor.bankDetails,
           },
           vendorReference: "catering",
-          lineItems: [
-            {
-              description: "Catering Services",
-              serviceType: "Catering",
-              quantity: booking.numberOfGuests,
-              unitPrice: booking.foodPackage?.totalPricePerPerson || 0,
-              totalPrice:
-                (booking.foodPackage?.totalPricePerPerson || 0) *
-                booking.numberOfGuests,
-            },
-          ],
-          totalAmount: booking.foodPackage?.totalPricePerPerson || 0,
+          lineItems: lineItems,
+          totalAmount: totalPrice,
           issueDate: new Date(),
           dueDate: new Date(booking.eventStartDateTime),
           notes: `Catering for ${booking.occasionType} - ${booking.numberOfGuests} guests`,
@@ -126,7 +155,50 @@ export class BookingPOService {
           throw new Error("No catering vendor found in booking");
         }
 
+        if (!booking.foodPackage) {
+          throw new Error("No food package found in booking");
+        }
+
         const cateringVendor = booking.cateringServiceVendor;
+        const lineItems: any[] = [];
+
+        // Add main catering service line
+        const unitPrice = booking.foodPackage.totalPricePerPerson || 0;
+        const totalPrice = unitPrice * booking.numberOfGuests;
+
+        lineItems.push({
+          description: `Catering Services - ${booking.foodPackage.name}`,
+          serviceType: "Catering",
+          quantity: booking.numberOfGuests,
+          unitPrice: unitPrice,
+          totalPrice: totalPrice,
+        });
+
+        // Add detailed line items for each section if applicable
+        if (booking.foodPackage.sections && booking.foodPackage.sections.length > 0) {
+          for (const section of booking.foodPackage.sections) {
+            if (section.items && section.items.length > 0) {
+              lineItems.push({
+                description: `${section.sectionName} (${section.items.length} items)`,
+                serviceType: section.sectionName,
+                quantity: booking.numberOfGuests,
+                unitPrice: section.sectionTotalPerPerson || 0,
+                totalPrice: (section.sectionTotalPerPerson || 0) * booking.numberOfGuests,
+              });
+            }
+          }
+        }
+
+        // Add inclusions as a line item if present
+        if (booking.foodPackage.inclusions && booking.foodPackage.inclusions.length > 0) {
+          lineItems.push({
+            description: `Inclusions: ${booking.foodPackage.inclusions.join(", ")}`,
+            serviceType: "Inclusions",
+            quantity: 1,
+            unitPrice: 0,
+            totalPrice: 0,
+          });
+        }
 
         const cateringPO: CreatePurchaseOrderInput = {
           bookingId: booking._id.toString(),
@@ -139,15 +211,8 @@ export class BookingPOService {
             bankDetails: cateringVendor.bankDetails,
           },
           vendorReference: "catering",
-          lineItems: [
-            {
-              description: "Catering Services",
-              serviceType: "Catering",
-              quantity: booking.numberOfGuests,
-              totalPrice: booking.package?.price || 0,
-            },
-          ],
-          totalAmount: booking.package?.price || 0,
+          lineItems: lineItems,
+          totalAmount: totalPrice,
           issueDate: new Date(),
           dueDate: new Date(booking.eventStartDateTime),
           notes: `Catering for ${booking.occasionType} - ${booking.numberOfGuests} guests`,
@@ -245,8 +310,47 @@ export class BookingPOService {
 
       const purchaseOrders: any[] = [];
 
-      if (booking.cateringServiceVendor) {
+      if (booking.cateringServiceVendor && booking.foodPackage) {
         const cateringVendor = booking.cateringServiceVendor;
+        const lineItems: any[] = [];
+
+        // Add main catering service line
+        const unitPrice = booking.foodPackage.totalPricePerPerson || 0;
+        const totalPrice = unitPrice * booking.numberOfGuests;
+
+        lineItems.push({
+          description: `Catering Services - ${booking.foodPackage.name}`,
+          serviceType: "Catering",
+          quantity: booking.numberOfGuests,
+          unitPrice: unitPrice,
+          totalPrice: totalPrice,
+        });
+
+        // Add detailed line items for each section if applicable
+        if (booking.foodPackage.sections && booking.foodPackage.sections.length > 0) {
+          for (const section of booking.foodPackage.sections) {
+            if (section.items && section.items.length > 0) {
+              lineItems.push({
+                description: `${section.sectionName} (${section.items.length} items)`,
+                serviceType: section.sectionName,
+                quantity: booking.numberOfGuests,
+                unitPrice: section.sectionTotalPerPerson || 0,
+                totalPrice: (section.sectionTotalPerPerson || 0) * booking.numberOfGuests,
+              });
+            }
+          }
+        }
+
+        // Add inclusions as a line item if present
+        if (booking.foodPackage.inclusions && booking.foodPackage.inclusions.length > 0) {
+          lineItems.push({
+            description: `Inclusions: ${booking.foodPackage.inclusions.join(", ")}`,
+            serviceType: "Inclusions",
+            quantity: 1,
+            unitPrice: 0,
+            totalPrice: 0,
+          });
+        }
 
         const cateringPO: CreatePurchaseOrderInput = {
           bookingId: booking._id.toString(),
@@ -259,18 +363,8 @@ export class BookingPOService {
             bankDetails: cateringVendor.bankDetails,
           },
           vendorReference: "catering",
-          lineItems: [
-            {
-              description: "Catering Services",
-              serviceType: "Catering",
-              quantity: booking.numberOfGuests,
-              unitPrice: booking.foodPackage?.totalPricePerPerson || 0,
-              totalPrice:
-                (booking.foodPackage?.totalPricePerPerson || 0) *
-                booking.numberOfGuests,
-            },
-          ],
-          totalAmount: booking.foodPackage?.totalPricePerPerson || 0,
+          lineItems: lineItems,
+          totalAmount: totalPrice,
           issueDate: new Date(),
           dueDate: new Date(booking.eventStartDateTime),
           notes: `Catering for ${booking.occasionType} - ${booking.numberOfGuests} guests`,
@@ -282,7 +376,7 @@ export class BookingPOService {
           cateringPO
         );
         purchaseOrders.push(po);
-        console.log(po, " Catering PO created");
+        console.log(po, " Catering PO updated");
       }
 
       // 2. Generate POs for Service Vendors

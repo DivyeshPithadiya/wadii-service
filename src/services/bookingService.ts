@@ -209,6 +209,16 @@ export class BookingService {
     updateData: Partial<IBooking>
   ): Promise<IBooking | null> {
     try {
+      // Get current booking to check for changes
+      const currentBooking = await Booking.findOne({
+        _id: oid(bookingId),
+        isDeleted: false,
+      });
+
+      if (!currentBooking) {
+        throw new Error("Booking not found");
+      }
+
       if (updateData.foodPackage && updateData.numberOfGuests) {
         updateData.foodPackage = recalcFoodPackage(updateData.foodPackage);
 
@@ -230,9 +240,89 @@ export class BookingService {
         .populate("leadId", "clientName contactNo email leadStatus")
         .populate("createdBy", "_id email firstName lastName")
         .populate("updatedBy", "_id email firstName lastName");
+
+      // If numberOfGuests changed, update the catering PO
+      if (
+        booking &&
+        updateData.numberOfGuests &&
+        updateData.numberOfGuests !== currentBooking.numberOfGuests
+      ) {
+        await this.updateCateringPO(booking);
+      }
+
       return booking;
     } catch (error: any) {
       throw new Error(`Error updating booking: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update catering PO when booking numberOfGuests changes
+   */
+  private static async updateCateringPO(booking: IBooking): Promise<void> {
+    try {
+      const { PurchaseOrder } = await import("../models/PurchaseOrder");
+
+      // Find the catering PO for this booking
+      const cateringPO = await PurchaseOrder.findOne({
+        bookingId: booking._id,
+        vendorType: "catering",
+      });
+
+      if (cateringPO && booking.foodPackage) {
+        // Build line items from food package sections
+        const lineItems: any[] = [];
+
+        // Add main catering service line
+        const unitPrice = booking.foodPackage.totalPricePerPerson || 0;
+        const totalPrice = unitPrice * booking.numberOfGuests;
+
+        lineItems.push({
+          description: `Catering Services - ${booking.foodPackage.name}`,
+          serviceType: "Catering",
+          quantity: booking.numberOfGuests,
+          unitPrice: unitPrice,
+          totalPrice: totalPrice,
+        });
+
+        // Add detailed line items for each section if applicable
+        if (booking.foodPackage.sections && booking.foodPackage.sections.length > 0) {
+          for (const section of booking.foodPackage.sections) {
+            if (section.items && section.items.length > 0) {
+              // Add section as a line item
+              lineItems.push({
+                description: `${section.sectionName} (${section.items.length} items)`,
+                serviceType: section.sectionName,
+                quantity: booking.numberOfGuests,
+                unitPrice: section.sectionTotalPerPerson || 0,
+                totalPrice: (section.sectionTotalPerPerson || 0) * booking.numberOfGuests,
+              });
+            }
+          }
+        }
+
+        // Add inclusions as a line item if present
+        if (booking.foodPackage.inclusions && booking.foodPackage.inclusions.length > 0) {
+          lineItems.push({
+            description: `Inclusions: ${booking.foodPackage.inclusions.join(", ")}`,
+            serviceType: "Inclusions",
+            quantity: 1,
+            unitPrice: 0,
+            totalPrice: 0,
+          });
+        }
+
+        cateringPO.lineItems = lineItems;
+        cateringPO.totalAmount = totalPrice;
+
+        await cateringPO.save();
+        console.log(
+          `Updated catering PO ${cateringPO.poNumber} with new guest count: ${booking.numberOfGuests}`
+        );
+      }
+    } catch (error: any) {
+      // Log error but don't fail the booking update
+      console.error(`Error updating catering PO: ${error.message}`);
     }
   }
 

@@ -53,11 +53,6 @@ const FoodPackageSectionSchema = new Schema(
       required: false,
       min: 1,
     },
-    inclusions: {
-      type: [String],
-      default: [],
-      required: false,
-    },
     defaultPrice: {
       type: Number,
       required: false,
@@ -90,6 +85,11 @@ const FoodPackageSchema = new Schema(
     isCustomised: {
       type: Boolean,
       default: false,
+    },
+    inclusions: {
+      type: [String],
+      default: [],
+      required: false,
     },
     sections: {
       type: [FoodPackageSectionSchema],

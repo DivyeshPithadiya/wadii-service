@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # Banquet Booking API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wadii-service
+    restart: unless-stopped
+    ports:
+      - "2000:2000"
+    environment:
+      NODE_ENV: production
+      PORT: 2000
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+    volumes:
+      # Mount logs directory if needed
+      - ./logs:/app/logs
