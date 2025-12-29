@@ -17,31 +17,18 @@ export const POVendorTypeSchema = z.enum(["catering", "service"]);
  * Bank Details Schema
  */
 export const BankDetailsSchema = z.object({
-  accountNumber: z
-    .string()
-    .max(20, "Account number is too long")
-    .optional(),
+  accountNumber: z.string().max(20, "Account number is too long").optional(),
 
   accountHolderName: z
     .string()
     .max(100, "Account holder name is too long")
     .optional(),
 
-  ifscCode: z
-    .string()
-    .max(11, "IFSC code must be 11 characters")
-    .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "Invalid IFSC code format")
-    .optional(),
+  ifscCode: z.string().max(11, "IFSC code must be 11 characters").optional(),
 
-  bankName: z
-    .string()
-    .max(100, "Bank name is too long")
-    .optional(),
+  bankName: z.string().max(100, "Bank name is too long").optional(),
 
-  branchName: z
-    .string()
-    .max(100, "Branch name is too long")
-    .optional(),
+  branchName: z.string().max(100, "Branch name is too long").optional(),
 
   upiId: z
     .string()

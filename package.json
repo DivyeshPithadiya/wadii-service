@@ -11,6 +11,7 @@
     "test": "jest",
     "seed": "ts-node src/scripts/seed.ts",
     "migrate:roles": "ts-node src/scripts/migrate-roles.ts",
+    "migrate:db": "ts-node src/scripts/migrate-database.ts",
     "test:permissions": "ts-node src/scripts/test-permissions.ts",
     "debug:permissions": "ts-node src/scripts/debug-permissions.ts",
     "update:owner-permissions": "ts-node src/scripts/update-owner-permissions.ts"
