@@ -79,7 +79,13 @@ export interface IVenue extends Document<Types.ObjectId> {
     description: string;
     price: number;
     priceType: "flat" | "per_guest";
-    inclusions?: [""];
+    inclusions?: string[];
+    menuSections?: Array<{
+      sectionName: string;
+      selectionType: "limit" | "all_included";
+      maxSelectable?: number;
+      defaultPrice?: number;
+    }>;
   }>;
   foodMenu?: IFoodMenuSection[];
   cateringServiceVendor?: Array<{

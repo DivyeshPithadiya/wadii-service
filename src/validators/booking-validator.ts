@@ -42,18 +42,18 @@ const foodItemSchema = z.object({
 const foodSectionSchema = z.object({
   sectionName: z.string().min(1),
   selectionType: z.enum(["free", "limit", "all_included"]),
-  maxSelectable: z.number().optional(),
+  maxSelectable: z.number().int().min(1).optional(),
   defaultPrice: z.number().min(0).optional(),
-  items: z.array(foodItemSchema).min(1),
-  sectionTotalPerPerson: z.number().min(0),
+  items: z.array(foodItemSchema).default([]),
+  sectionTotalPerPerson: z.number().min(0).default(0),
 });
 const foodPackageSchema = z.object({
   sourcePackageId: z.string().optional(),
   name: z.string().min(1),
-  isCustomised: z.boolean(),
-  inclusions: z.array(z.string()).optional(),
-  sections: z.array(foodSectionSchema).optional(),
-  totalPricePerPerson: z.number().min(0),
+  isCustomised: z.boolean().optional().default(false),
+  inclusions: z.array(z.string()).optional().default([]),
+  sections: z.array(foodSectionSchema).min(1, "At least one section is required"),
+  totalPricePerPerson: z.number().min(0).default(0),
 });
 
 
@@ -93,11 +93,12 @@ export const createBookingSchema = z
     services: z.array(serviceSchema).optional(),
 
     payment: z.object({
-      totalAmount: z.number().min(0, "Total amount must be positive"),
+      totalAmount: z.number().min(0, "Total amount must be positive").optional(),
       advanceAmount: z
         .number()
         .min(0, "Advance amount must be positive")
-        .default(0),
+        .default(0)
+        .optional(),
       paymentStatus: z
         .enum(["unpaid", "partially_paid", "paid"])
         .default("unpaid")
@@ -109,10 +110,19 @@ export const createBookingSchema = z
     notes: z.string().optional(),
     internalNotes: z.string().optional(),
   })
-  .refine((data) => data.payment.advanceAmount <= data.payment.totalAmount, {
-    message: "Advance amount cannot exceed total amount",
-    path: ["payment", "advanceAmount"],
-  })
+  .refine(
+    (data) => {
+      // Only validate if totalAmount is provided
+      if (data.payment.totalAmount !== undefined && data.payment.advanceAmount !== undefined) {
+        return data.payment.advanceAmount <= data.payment.totalAmount;
+      }
+      return true;
+    },
+    {
+      message: "Advance amount cannot exceed total amount",
+      path: ["payment", "advanceAmount"],
+    }
+  )
   .refine(
     (data) =>
       new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime),
@@ -139,6 +149,14 @@ export const updateBookingSchema = z
     eventEndDateTime: z.coerce.date().optional(),
     slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
     foodPackage: foodPackageSchema.optional(),
+    cateringServiceVendor: z
+      .object({
+        name: z.string(),
+        email: z.string().email(),
+        phone: z.string(),
+        bankDetails: bankDetailsSchema.optional(),
+      })
+      .optional(),
     services: z.array(serviceSchema).optional(),
     payment: z
       .object({

@@ -17,8 +17,15 @@ const foodMenuItemSchema = z.object({
 export const createFoodMenuSectionSchema = z
   .object({
     sectionName: z.string().trim().min(1, "Section name is required"),
-    selectionType: z.enum(["free", "limit", "all_included"],).optional().default("free"),
+    selectionType: z
+      .enum(["free", "limit", "all_included"])
+      .optional()
+      .default("free"),
     maxSelectable: z.number().int().min(1).optional(),
+    defaultPrice: z
+      .number()
+      .min(0, "Default price must be non-negative")
+      .optional(),
     items: z
       .array(foodMenuItemSchema)
       .min(1, "At least one item is required")
@@ -40,7 +47,8 @@ export const createFoodMenuSectionSchema = z
       return true;
     },
     {
-      message: "maxSelectable is required and must be greater than 0 when selectionType is 'limit'",
+      message:
+        "maxSelectable is required and must be greater than 0 when selectionType is 'limit'",
       path: ["maxSelectable"],
     }
   );

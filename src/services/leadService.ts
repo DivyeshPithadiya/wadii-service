@@ -38,7 +38,24 @@ export class LeadService {
       }
 
       if (leadData.foodPackage) {
-        leadData.foodPackage = recalcFoodPackage(leadData.foodPackage);
+        // Fetch venue package configuration if sourcePackageId is provided
+        let venuePackageConfig = null;
+        if (leadData.foodPackage.sourcePackageId && leadData.venueId) {
+          const { Venue } = await import("../models/Venue");
+          const venue = await Venue.findById(leadData.venueId).lean();
+          if (venue?.foodPackages) {
+            venuePackageConfig = venue.foodPackages.find(
+              (pkg: any) =>
+                pkg._id?.toString() ===
+                leadData.foodPackage.sourcePackageId?.toString()
+            );
+          }
+        }
+
+        leadData.foodPackage = recalcFoodPackage(
+          leadData.foodPackage,
+          venuePackageConfig
+        );
       }
 
       const lead = new Lead(leadData);
@@ -182,7 +199,27 @@ export class LeadService {
   ): Promise<ILead | null> {
     try {
       if (updateData.foodPackage) {
-        updateData.foodPackage = recalcFoodPackage(updateData.foodPackage);
+        // Fetch venue package configuration if sourcePackageId is provided
+        let venuePackageConfig = null;
+        if (updateData.foodPackage.sourcePackageId) {
+          const currentLead = await Lead.findById(leadId).lean();
+          if (currentLead?.venueId) {
+            const { Venue } = await import("../models/Venue");
+            const venue = await Venue.findById(currentLead.venueId).lean();
+            if (venue?.foodPackages) {
+              venuePackageConfig = venue.foodPackages.find(
+                (pkg: any) =>
+                  pkg._id?.toString() ===
+                  updateData.foodPackage.sourcePackageId?.toString()
+              );
+            }
+          }
+        }
+
+        updateData.foodPackage = recalcFoodPackage(
+          updateData.foodPackage,
+          venuePackageConfig
+        );
       }
       const lead = await Lead.findByIdAndUpdate(
         leadId,

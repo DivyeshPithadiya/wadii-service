@@ -408,7 +408,7 @@ export class VenueController {
    * POST /venues/:venueId/packages
    */
   static async addFoodPackage(
-    req: Request<Params, any, ServicesAndVendorsBody, Query>,
+    req: Request<Params, any, any, Query>,
     res: Response
   ): Promise<void> {
     try {
@@ -418,7 +418,8 @@ export class VenueController {
       }
 
       const { venueId } = req.params;
-      const { name, description, price, priceType, inclusions } = req.body;
+      const { name, description, price, priceType, inclusions, menuSections } =
+        req.body;
 
       if (!venueId) {
         res
@@ -437,7 +438,7 @@ export class VenueController {
 
       const venue = await VenueService.addFoodPackage(
         venueId,
-        { name, description, price, priceType, inclusions },
+        { name, description, price, priceType, inclusions, menuSections },
         req.user.userId,
         req.user.userId,
         req.userRole as RoleSnapshot | undefined
@@ -550,10 +551,13 @@ export class VenueController {
       const { venueId } = req.params;
 
       console.log("========== CONTROLLER: ADD CATERING VENDOR ==========");
-      console.log("[CONTROLLER] Full request body:", JSON.stringify(req.body, null, 2));
+      console.log(
+        "[CONTROLLER] Full request body:",
+        JSON.stringify(req.body, null, 2)
+      );
       console.log("[CONTROLLER] Request headers:", {
-        contentType: req.headers['content-type'],
-        contentLength: req.headers['content-length'],
+        contentType: req.headers["content-type"],
+        contentLength: req.headers["content-length"],
       });
 
       const { name, email, phone, bankDetails } = req.body;
@@ -819,7 +823,8 @@ export class VenueController {
       }
 
       const { venueId, packageId } = req.params;
-      const { name, description, price, priceType, inclusions } = req.body;
+      const { name, description, price, priceType, inclusions, menuSections } =
+        req.body;
 
       if (!venueId || !packageId) {
         res.status(400).json({
@@ -832,7 +837,7 @@ export class VenueController {
       const venue = await VenueService.updateFoodPackage(
         venueId,
         packageId,
-        { name, description, price, priceType, inclusions },
+        { name, description, price, priceType, inclusions, menuSections },
         req.user.userId,
         req.user.userId,
         req.userRole as RoleSnapshot | undefined

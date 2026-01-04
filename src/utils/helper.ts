@@ -10,20 +10,75 @@ export function parseNumberParam(
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
 }
-export function recalcFoodPackage(pkg: any) {
-  let total = 0;
+/**
+ * Recalculate food package pricing based on section items and maxSelectable limits
+ *
+ * Pricing logic:
+ * - For sections with maxSelectable limit:
+ *   - First item (up to maxSelectable): Uses defaultPrice (usually 0 or base price)
+ *   - Additional items beyond maxSelectable: Adds item's pricePerPerson to section total
+ * - For sections without limit (all_included, free):
+ *   - Sums all item prices
+ *
+ * @param pkg - The food package with sections and items
+ * @param venuePackageConfig - Optional venue package configuration with menuSections containing maxSelectable and defaultPrice
+ * @returns Updated package with calculated section totals and totalPricePerPerson
+ */
+export function recalcFoodPackage(pkg: any, venuePackageConfig?: any) {
+  let sectionTotals = 0;
+  const basePackagePrice = venuePackageConfig?.price || 0;
+
+  // Create a map of section configurations from venue package for easy lookup
+  const sectionConfigMap = new Map();
+  if (venuePackageConfig?.menuSections) {
+    venuePackageConfig.menuSections.forEach((menuSection: any) => {
+      sectionConfigMap.set(menuSection.sectionName, menuSection);
+    });
+  }
 
   pkg.sections.forEach((section: any) => {
-    const sectionTotal = section.items.reduce(
-      (sum: number, item: any) => sum + item.pricePerPerson,
-      0
-    );
+    const sectionConfig = sectionConfigMap.get(section.sectionName);
+    const maxSelectable = section.maxSelectable || sectionConfig?.maxSelectable;
+    const defaultPrice = section.defaultPrice ?? sectionConfig?.defaultPrice ?? 0;
+    const selectionType = section.selectionType;
+
+    let sectionTotal = 0;
+
+    if (selectionType === "limit" && maxSelectable && section.items.length > 0) {
+      // For sections with selection limits:
+      // - First 'maxSelectable' items are included at defaultPrice
+      // - Additional items add their pricePerPerson to the section total
+
+      // Base price for included items
+      sectionTotal = defaultPrice;
+
+      // Add price for extra items beyond the limit
+      if (section.items.length > maxSelectable) {
+        const extraItems = section.items.slice(maxSelectable);
+        const extraItemsPrice = extraItems.reduce(
+          (sum: number, item: any) => sum + (item.pricePerPerson || 0),
+          0
+        );
+        sectionTotal += extraItemsPrice;
+      }
+    } else if (selectionType === "all_included") {
+      // For all_included sections, typically use defaultPrice regardless of items
+      sectionTotal = defaultPrice;
+    } else {
+      // For "free" or sections without limits, sum all item prices
+      sectionTotal = section.items.reduce(
+        (sum: number, item: any) => sum + (item.pricePerPerson || 0),
+        0
+      );
+    }
 
     section.sectionTotalPerPerson = sectionTotal;
-    total += sectionTotal;
+    sectionTotals += sectionTotal;
   });
 
-  pkg.totalPricePerPerson = total;
+  // Total price = base package price + all section totals
+  pkg.totalPricePerPerson = basePackagePrice + sectionTotals;
+
   return pkg;
 }
 export function calculateFoodCost(foodPackage: any, guests: number) {
@@ -47,5 +102,55 @@ export function calculateTotals({
   return {
     foodCostTotal,
     totalAmount: foodCostTotal + servicesTotal,
+  };
+}
+
+/**
+ * Validate food package sections against venue package configuration
+ * Checks if selected items exceed maxSelectable limits
+ *
+ * @param foodPackage - The food package from lead/booking
+ * @param venuePackageConfig - Venue's food package configuration
+ * @returns Object with isValid flag and array of validation errors
+ */
+export function validateFoodPackageLimits(
+  foodPackage: any,
+  venuePackageConfig: any
+): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!foodPackage?.sections || !venuePackageConfig?.menuSections) {
+    return { isValid: true, errors: [] };
+  }
+
+  // Create a map of section configurations from venue package
+  const sectionConfigMap = new Map();
+  venuePackageConfig.menuSections.forEach((menuSection: any) => {
+    sectionConfigMap.set(menuSection.sectionName, menuSection);
+  });
+
+  foodPackage.sections.forEach((section: any) => {
+    const sectionConfig = sectionConfigMap.get(section.sectionName);
+
+    if (!sectionConfig) {
+      errors.push(
+        `Section "${section.sectionName}" is not available in package "${venuePackageConfig.name}"`
+      );
+      return;
+    }
+
+    // Check maxSelectable limit for "limit" type sections
+    if (section.selectionType === "limit" && sectionConfig.maxSelectable) {
+      if (section.items.length > sectionConfig.maxSelectable) {
+        errors.push(
+          `Section "${section.sectionName}" allows maximum ${sectionConfig.maxSelectable} item(s), but ${section.items.length} were selected`
+        );
+      }
+    }
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
   };
 }

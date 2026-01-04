@@ -47,7 +47,24 @@ export class BookingService {
         }
       }
       if (bookingData.foodPackage && bookingData.numberOfGuests) {
-        bookingData.foodPackage = recalcFoodPackage(bookingData.foodPackage);
+        // Fetch venue package configuration if sourcePackageId is provided
+        let venuePackageConfig = null;
+        if (bookingData.foodPackage.sourcePackageId && bookingData.venueId) {
+          const { Venue } = await import("../models/Venue");
+          const venue = await Venue.findById(bookingData.venueId).lean();
+          if (venue?.foodPackages) {
+            venuePackageConfig = venue.foodPackages.find(
+              (pkg: any) =>
+                pkg._id?.toString() ===
+                bookingData.foodPackage?.sourcePackageId?.toString()
+            );
+          }
+        }
+
+        bookingData.foodPackage = recalcFoodPackage(
+          bookingData.foodPackage,
+          venuePackageConfig
+        );
 
         const totals = calculateTotals({
           foodPackage: bookingData.foodPackage,
@@ -219,13 +236,59 @@ export class BookingService {
         throw new Error("Booking not found");
       }
 
-      if (updateData.foodPackage && updateData.numberOfGuests) {
-        updateData.foodPackage = recalcFoodPackage(updateData.foodPackage);
+      // Handle food package recalculation for partial updates
+      const foodPackageToCalc = updateData.foodPackage || currentBooking.foodPackage;
+      const guestsToCalc = updateData.numberOfGuests ?? currentBooking.numberOfGuests;
 
-        updateData.foodCostTotal = calculateFoodCost(
-          updateData.foodPackage,
-          updateData.numberOfGuests
+      if (updateData.foodPackage || updateData.numberOfGuests || updateData.services) {
+        // If foodPackage is being updated, recalculate with venue config
+        if (updateData.foodPackage) {
+          let venuePackageConfig = null;
+          if (updateData.foodPackage.sourcePackageId) {
+            const { Venue } = await import("../models/Venue");
+            const venue = await Venue.findById(currentBooking.venueId).lean();
+            if (venue?.foodPackages) {
+              venuePackageConfig = venue.foodPackages.find(
+                (pkg: any) =>
+                  pkg._id?.toString() ===
+                  updateData.foodPackage?.sourcePackageId?.toString()
+              );
+            }
+          }
+
+          updateData.foodPackage = recalcFoodPackage(
+            updateData.foodPackage,
+            venuePackageConfig
+          );
+        }
+
+        // Recalculate food cost total if either foodPackage or numberOfGuests changed
+        if (foodPackageToCalc && guestsToCalc) {
+          const finalFoodPackage = updateData.foodPackage || currentBooking.foodPackage;
+          updateData.foodCostTotal = calculateFoodCost(
+            finalFoodPackage,
+            guestsToCalc
+          );
+        }
+
+        // Always recalculate payment total amount when foodPackage, numberOfGuests, or services change
+        const finalFoodCostTotal = updateData.foodCostTotal ?? (currentBooking as any).foodCostTotal ?? 0;
+        const finalServices = updateData.services ?? currentBooking.services ?? [];
+        const servicesTotal = finalServices.reduce(
+          (sum: number, s: any) => sum + (s.price || 0),
+          0
         );
+
+        // Preserve existing payment details but update totalAmount
+        const currentPayment = currentBooking.payment || {};
+        const updatePayment = updateData.payment || {};
+
+        updateData.payment = {
+          totalAmount: finalFoodCostTotal + servicesTotal,
+          advanceAmount: updatePayment.advanceAmount ?? currentPayment.advanceAmount ?? 0,
+          paymentStatus: updatePayment.paymentStatus ?? currentPayment.paymentStatus ?? "unpaid",
+          paymentMode: updatePayment.paymentMode ?? currentPayment.paymentMode ?? "cash",
+        };
       }
 
       const booking = await Booking.findOneAndUpdate(

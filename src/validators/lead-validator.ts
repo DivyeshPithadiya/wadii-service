@@ -19,10 +19,10 @@ const foodItemSchema = z.object({
 const foodSectionSchema = z.object({
   sectionName: z.string().min(1),
   selectionType: z.enum(["free", "limit", "all_included"]),
-  maxSelectable: z.number().optional(),
+  maxSelectable: z.number().int().min(1).optional(),
   defaultPrice: z.number().min(0).optional(),
-  items: z.array(foodItemSchema).min(1),
-  sectionTotalPerPerson: z.number().min(0),
+  items: z.array(foodItemSchema).default([]),
+  sectionTotalPerPerson: z.number().min(0).default(0),
 });
 
 /**
@@ -31,10 +31,10 @@ const foodSectionSchema = z.object({
 const foodPackageSchema = z.object({
   sourcePackageId: z.string().optional(),
   name: z.string().min(1),
-  isCustomised: z.boolean().optional(),
-  inclusions: z.array(z.string()).optional(),
-  sections: z.array(foodSectionSchema).optional(),
-  totalPricePerPerson: z.number().min(0),
+  isCustomised: z.boolean().optional().default(false),
+  inclusions: z.array(z.string()).optional().default([]),
+  sections: z.array(foodSectionSchema).min(1, "At least one section is required"),
+  totalPricePerPerson: z.number().min(0).default(0),
 });
 
 /**

@@ -84,6 +84,32 @@ const venueSchema = new Schema<IVenue>(
           default: [],
           required: false, // or true if you want it mandatory
         },
+        menuSections: [
+          {
+            sectionName: {
+              type: String,
+              required: true,
+              trim: true,
+            },
+            selectionType: {
+              type: String,
+              enum: ["limit", "all_included"],
+              required: true,
+            },
+            defaultPrice: {
+              type: Number,
+              required: false,
+              default: 0,
+            },
+            maxSelectable: {
+              type: Number,
+              min: 1,
+              required: function (this: any) {
+                return this.selectionType === "limit";
+              },
+            },
+          },
+        ],
       },
     ],
     foodMenu: [
@@ -322,17 +348,72 @@ venueSchema.pre("save", function (next) {
       // Validate items is array
       if (!Array.isArray(section.items)) {
         return next(
-          new Error(`Items must be an array for section "${section.sectionName}"`)
+          new Error(
+            `Items must be an array for section "${section.sectionName}"`
+          )
         );
       }
 
       // Validate unique item names within section
-      const itemNames = section.items.map((item: any) => item.name.toLowerCase());
+      const itemNames = section.items.map((item: any) =>
+        item.name.toLowerCase()
+      );
       const uniqueNames = new Set(itemNames);
       if (itemNames.length !== uniqueNames.size) {
         return next(
-          new Error(`Duplicate item names found in section "${section.sectionName}"`)
+          new Error(
+            `Duplicate item names found in section "${section.sectionName}"`
+          )
         );
+      }
+    }
+  }
+  next();
+});
+
+// Validation: Food package menuSections must reference valid foodMenu sections
+venueSchema.pre("save", function (next) {
+  if (this.foodPackages && this.foodPackages.length > 0) {
+    // Get all available foodMenu section names
+    const availableSections = new Set(
+      (this.foodMenu || []).map((section: any) => section.sectionName)
+    );
+
+    for (const pkg of this.foodPackages) {
+      if (pkg.menuSections && pkg.menuSections.length > 0) {
+        // Check for unique section names within the package
+        const sectionNames = pkg.menuSections.map((ms: any) => ms.sectionName);
+        const uniqueSectionNames = new Set(sectionNames);
+        if (sectionNames.length !== uniqueSectionNames.size) {
+          return next(
+            new Error(
+              `Package "${pkg.name}" has duplicate menu section names. Each section must be unique within the package.`
+            )
+          );
+        }
+
+        for (const menuSection of pkg.menuSections) {
+          // Validate that sectionName exists in foodMenu
+          if (!availableSections.has(menuSection.sectionName)) {
+            return next(
+              new Error(
+                `Package "${pkg.name}" references invalid menu section "${menuSection.sectionName}". Section does not exist in foodMenu.`
+              )
+            );
+          }
+
+          // Validate maxSelectable for "limit" type
+          if (
+            menuSection.selectionType === "limit" &&
+            !menuSection.maxSelectable
+          ) {
+            return next(
+              new Error(
+                `maxSelectable is required for package "${pkg.name}" menuSection "${menuSection.sectionName}" with selectionType "limit"`
+              )
+            );
+          }
+        }
       }
     }
   }

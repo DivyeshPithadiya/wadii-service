@@ -17,12 +17,23 @@ const vendorSchema = z.object({
   bankDetails: bankDetailsSchema.optional(),
 });
 
+const menuSectionSchema = z.object({
+  sectionName: z.string().min(1, "Section name is required"),
+  selectionType: z.enum(["limit", "all_included"]),
+  maxSelectable: z.number().min(1).optional(),
+  defaultPrice: z
+    .number()
+    .min(0, "Default price must be non-negative")
+    .optional(),
+});
+
 const foodPackageSchema = z.object({
   name: z.string().min(1, "Package name is required"),
   description: z.string().min(1, "Description is required"),
   price: z.number().min(0, "Price must be positive"),
   priceType: z.enum(["flat", "per_guest"]),
   inclusions: z.array(z.string().min(1)).optional(),
+  menuSections: z.array(menuSectionSchema).optional(),
 });
 
 const removeVendorSchema = z.object({
@@ -35,6 +46,7 @@ const updatePackageSchema = z.object({
   price: z.number().optional(),
   priceType: z.enum(["flat", "per_guest"]).optional(),
   inclusions: z.array(z.string().min(1)).optional(),
+  menuSections: z.array(menuSectionSchema).optional(),
 });
 const createServiceSchema = z.object({
   serviceName: z.string().min(1, "Service name is required"),
