@@ -281,7 +281,7 @@ export class BookingService {
 
         // Preserve existing payment details but update totalAmount
         const currentPayment = currentBooking.payment || {};
-        const updatePayment = updateData.payment || {};
+        const updatePayment: any = updateData.payment || {}
 
         updateData.payment = {
           totalAmount: finalFoodCostTotal + servicesTotal,

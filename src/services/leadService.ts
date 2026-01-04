@@ -47,8 +47,8 @@ export class LeadService {
             venuePackageConfig = venue.foodPackages.find(
               (pkg: any) =>
                 pkg._id?.toString() ===
-                leadData.foodPackage.sourcePackageId?.toString()
-            );
+                leadData?.foodPackage?.sourcePackageId?.toString()
+            )
           }
         }
 
@@ -210,8 +210,8 @@ export class LeadService {
               venuePackageConfig = venue.foodPackages.find(
                 (pkg: any) =>
                   pkg._id?.toString() ===
-                  updateData.foodPackage.sourcePackageId?.toString()
-              );
+                  updateData?.foodPackage?.sourcePackageId?.toString()
+              )
             }
           }
         }
