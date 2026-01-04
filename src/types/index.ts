@@ -48,11 +48,12 @@ export interface IFoodMenuItem {
 }
 
 export interface IFoodMenuSection {
-  _id?: Types.ObjectId;
-  sectionName: string;
-  selectionType: "free" | "limit" | "all_included";
-  maxSelectable?: number;
-  items: IFoodMenuItem[];
+  _id?: Types.ObjectId
+  sectionName: string
+  selectionType: 'free' | 'limit' | 'all_included'
+  maxSelectable?: number
+  defaultPrice?: number
+  items: IFoodMenuItem[]
 }
 
 export interface IVenue extends Document<Types.ObjectId> {

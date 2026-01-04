@@ -37,7 +37,7 @@ const FoodPackageSectionSchema = new Schema(
     },
     selectionType: {
       type: String,
-      enum: ["free", "limit", "all_included"],
+      enum: ['limit', 'all_included'],
       required: true,
     },
     maxSelectable: {
@@ -61,7 +61,7 @@ const FoodPackageSectionSchema = new Schema(
     },
   },
   { _id: false }
-);
+)
 
 const FoodPackageSchema = new Schema(
   {
@@ -87,6 +87,11 @@ const FoodPackageSchema = new Schema(
       type: [FoodPackageSectionSchema],
       required: true,
     },
+    defaultPrice: {
+      type: Number,
+      required: false,
+      min: 0,
+    },
     totalPricePerPerson: {
       type: Number,
       required: true,
@@ -94,7 +99,7 @@ const FoodPackageSchema = new Schema(
     },
   },
   { _id: false }
-);
+)
 
 const leadSchema = new Schema<ILead>(
   {

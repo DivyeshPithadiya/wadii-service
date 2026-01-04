@@ -87,9 +87,15 @@ const FoodPackageSchema = new Schema(
       default: [],
       required: false,
     },
+
     sections: {
       type: [FoodPackageSectionSchema],
       required: true,
+    },
+    defaultPrice: {
+      type: Number,
+      required: false,
+      min: 0,
     },
     totalPricePerPerson: {
       type: Number,
@@ -98,7 +104,7 @@ const FoodPackageSchema = new Schema(
     },
   },
   { _id: false }
-);
+)
 
 const bookingSchema = new Schema<
   IBooking,

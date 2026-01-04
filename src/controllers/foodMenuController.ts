@@ -15,6 +15,7 @@ interface CreateSectionBody {
   sectionName: string;
   selectionType: "free" | "limit" | "all_included";
   maxSelectable?: number;
+  defaultPrice?: number;
   items: IFoodMenuItem[];
 }
 
@@ -22,6 +23,7 @@ interface UpdateSectionBody {
   sectionName?: string;
   selectionType?: "free" | "limit" | "all_included";
   maxSelectable?: number;
+  defaultPrice?: number;
   items?: IFoodMenuItem[];
 }
 
@@ -347,6 +349,42 @@ export class FoodMenuController {
         success: true,
         message: "Section retrieved successfully",
         data: section,
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * Get default prices for all food menu items
+   * GET /api/venues/:venueId/food-menu/default-prices
+   */
+  static async getDefaultPrice(
+    req: Request<Params, any, any, Query>,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const { venueId } = req.params;
+      if (!venueId) {
+        res.status(400).json({ success: false, message: "venueId is required" });
+        return;
+      }
+
+      const sectionsWithPrices = await FoodMenuService.getDefaultPrice(
+        venueId,
+        req.user.userId,
+        req.userRole as RoleSnapshot | undefined
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Default prices retrieved successfully",
+        data: sectionsWithPrices,
       });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });

@@ -20,12 +20,13 @@ export interface IFoodPackageSection {
 }
 
 export interface IFoodPackageSnapshot {
-  sourcePackageId?: Types.ObjectId;
-  name: string;
-  isCustomised: boolean;
-  inclusions?: string[];
-  sections: IFoodPackageSection[];
-  totalPricePerPerson: number;
+  sourcePackageId?: Types.ObjectId
+  name: string
+  isCustomised: boolean
+  inclusions?: string[]
+  sections: IFoodPackageSection[]
+  defaultPrice?: number
+  totalPricePerPerson: number
 }
 
 export interface ISelectedMenuItem {

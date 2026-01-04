@@ -5,7 +5,7 @@ const venueSchema = new Schema<IVenue>(
   {
     businessId: {
       type: Schema.Types.ObjectId,
-      ref: "Business",
+      ref: 'Business',
       required: true,
     },
     venueName: {
@@ -15,7 +15,7 @@ const venueSchema = new Schema<IVenue>(
     },
     venueType: {
       type: String,
-      enum: ["banquet", "lawn", "convention_center"],
+      enum: ['banquet', 'lawn', 'convention_center'],
       required: true,
     },
     capacity: {
@@ -76,7 +76,7 @@ const venueSchema = new Schema<IVenue>(
         },
         priceType: {
           type: String,
-          enum: ["flat", "per_guest"],
+          enum: ['flat', 'per_guest'],
           required: true,
         },
         inclusions: {
@@ -93,7 +93,7 @@ const venueSchema = new Schema<IVenue>(
             },
             selectionType: {
               type: String,
-              enum: ["limit", "all_included"],
+              enum: ['limit', 'all_included'],
               required: true,
             },
             defaultPrice: {
@@ -105,7 +105,7 @@ const venueSchema = new Schema<IVenue>(
               type: Number,
               min: 1,
               required: function (this: any) {
-                return this.selectionType === "limit";
+                return this.selectionType === 'limit'
               },
             },
           },
@@ -121,15 +121,20 @@ const venueSchema = new Schema<IVenue>(
         },
         selectionType: {
           type: String,
-          enum: ["free", "limit", "all_included"],
+          enum: ['free', 'limit', 'all_included'],
           required: true,
         },
         maxSelectable: {
           type: Number,
           min: 1,
           required: function (this: any) {
-            return this.selectionType === "limit";
+            return this.selectionType === 'limit'
           },
+        },
+        defaultPrice: {
+          type: Number,
+          required: false,
+          default: 0,
         },
         items: [
           {
@@ -295,8 +300,8 @@ const venueSchema = new Schema<IVenue>(
     },
     status: {
       type: String,
-      enum: ["active", "inactive"],
-      default: "active",
+      enum: ['active', 'inactive'],
+      default: 'active',
     },
     createdBy: {
       type: Schema.Types.ObjectId,
@@ -311,7 +316,7 @@ const venueSchema = new Schema<IVenue>(
     timestamps: true,
     versionKey: false,
   }
-);
+)
 
 // Indexes
 venueSchema.index({ businessId: 1 });

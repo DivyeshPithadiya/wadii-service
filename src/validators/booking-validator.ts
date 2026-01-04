@@ -51,9 +51,12 @@ const foodPackageSchema = z.object({
   name: z.string().min(1),
   isCustomised: z.boolean().optional().default(false),
   inclusions: z.array(z.string()).optional().default([]),
-  sections: z.array(foodSectionSchema).min(1, "At least one section is required"),
+  sections: z
+    .array(foodSectionSchema)
+    .min(1, 'At least one section is required'),
   totalPricePerPerson: z.number().min(0).default(0),
-});
+  defaultPrice: z.number().min(0).optional(),
+})
 
 
 

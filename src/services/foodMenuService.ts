@@ -86,6 +86,7 @@ export class FoodMenuService {
       sectionName?: string;
       selectionType?: "free" | "limit" | "all_included";
       maxSelectable?: number;
+      defaultPrice?: number;
       items?: IFoodMenuItem[];
     },
     updatedBy: string,
@@ -142,6 +143,9 @@ export class FoodMenuService {
     }
     if (updateData.maxSelectable !== undefined) {
       venue.foodMenu[sectionIndex].maxSelectable = updateData.maxSelectable;
+    }
+    if (updateData.defaultPrice !== undefined) {
+      venue.foodMenu[sectionIndex].defaultPrice = updateData.defaultPrice;
     }
     if (updateData.items !== undefined) {
       venue.foodMenu[sectionIndex].items = updateData.items;
@@ -335,9 +339,6 @@ export class FoodMenuService {
     if (updateData.isAvailable !== undefined) {
       section.items[itemIndex].isAvailable = updateData.isAvailable;
     }
-    if (updateData.priceAdjustment !== undefined) {
-      section.items[itemIndex].priceAdjustment = updateData.priceAdjustment;
-    }
 
     venue.updatedBy = updatedBy;
     venue.markModified("foodMenu");
@@ -462,5 +463,50 @@ export class FoodMenuService {
     }
 
     return section;
+  }
+
+  /**
+   * Get default prices from food menu sections and map them to individual items
+   */
+  static async getDefaultPrice(
+    venueId: string,
+    userId: string,
+    userRole?: RoleSnapshot
+  ) {
+    const venue = await Venue.findOne({ _id: oid(venueId) }).lean();
+    if (!venue) throw new Error("Venue not found");
+
+    // Permission check
+    if (!hasPerm(userRole, PERMS.VENUE_READ)) {
+      const hasAccess = await UserBusinessRole.findOne({
+        userId: oid(userId),
+        businessId: venue.businessId,
+        $or: [{ role: "owner" }, { permissions: { $in: [PERMS.VENUE_READ] } }],
+      }).lean();
+      if (!hasAccess) throw new Error("Permission denied");
+    }
+
+    if (!venue.foodMenu || venue.foodMenu.length === 0) {
+      throw new Error("No food menu sections found");
+    }
+
+    // Map section's defaultPrice to individual items as itemPricePerPerson
+    const sectionsWithPrices = venue.foodMenu.map((section: any) => {
+      const defaultPrice = section.defaultPrice || 0;
+
+      // Map the default price to each item as itemPricePerPerson
+      const itemsWithPrice = section.items.map((item: any) => ({
+        ...item,
+        itemPricePerPerson: defaultPrice,
+      }));
+
+      return {
+        ...section,
+        defaultPrice: defaultPrice,
+        items: itemsWithPrice,
+      };
+    });
+
+    return sectionsWithPrices;
   }
 }
