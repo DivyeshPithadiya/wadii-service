@@ -142,11 +142,11 @@ export const updateBookingSchema = z
     occasionType: z.string().trim().min(1).optional(),
     numberOfGuests: z.number().int().min(1).optional(),
     bookingStatus: z
-      .enum(["pending", "confirmed", "cancelled", "completed"])
+      .enum(['pending', 'confirmed', 'cancelled', 'completed'])
       .optional(),
     eventStartDateTime: z.coerce.date().optional(),
     eventEndDateTime: z.coerce.date().optional(),
-    slotType: z.enum(["setup", "event", "cleanup", "full_day"]).optional(),
+    slotType: z.enum(['setup', 'event', 'cleanup', 'full_day']).optional(),
     foodPackage: foodPackageSchema.optional(),
     cateringServiceVendor: z
       .object({
@@ -159,17 +159,9 @@ export const updateBookingSchema = z
     services: z.array(serviceSchema).optional(),
     payment: z
       .object({
-        totalAmount: z
-          .number()
-          .min(0, "Total amount must be positive")
-          .optional(),
-        advanceAmount: z
-          .number()
-          .min(0, "Advance amount must be positive")
-          .optional(),
-        paymentStatus: z.enum(["unpaid", "partially_paid", "paid"]).optional(),
+        paymentStatus: z.enum(['unpaid', 'partially_paid', 'paid']).optional(),
         paymentMode: z
-          .enum(["cash", "card", "upi", "bank_transfer", "cheque", "other"])
+          .enum(['cash', 'card', 'upi', 'bank_transfer', 'cheque', 'other'])
           .optional(),
       })
       .optional(),
@@ -179,33 +171,18 @@ export const updateBookingSchema = z
   .partial()
   .refine(
     (data) => {
-      if (
-        data.payment?.advanceAmount !== undefined &&
-        data.payment?.totalAmount !== undefined
-      ) {
-        return data.payment.advanceAmount <= data.payment.totalAmount;
-      }
-      return true;
-    },
-    {
-      message: "Advance amount cannot exceed total amount",
-      path: ["payment", "advanceAmount"],
-    }
-  )
-  .refine(
-    (data) => {
       if (data.eventStartDateTime && data.eventEndDateTime) {
         return (
           new Date(data.eventEndDateTime) > new Date(data.eventStartDateTime)
-        );
+        )
       }
-      return true;
+      return true
     },
     {
-      message: "End datetime must be after start datetime",
-      path: ["eventEndDateTime"],
+      message: 'End datetime must be after start datetime',
+      path: ['eventEndDateTime'],
     }
-  );
+  )
 
 /**
  * Cancel booking validation schema
