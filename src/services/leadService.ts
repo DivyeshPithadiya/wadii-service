@@ -18,7 +18,7 @@ export class LeadService {
           leadData.venueId.toString(),
           leadData.eventStartDateTime,
           leadData.eventEndDateTime
-        );
+        )
 
         if (conflictResult.hasConflict) {
           const conflictDates = conflictResult.conflictingDays
@@ -30,44 +30,44 @@ export class LeadService {
                   bd.endDate
                 ).toLocaleDateString()})`
             )
-            .join(", ");
+            .join(', ')
           throw new Error(
             `Cannot create lead. The selected dates conflict with blackout days: ${conflictDates}`
-          );
+          )
         }
       }
 
-      if (leadData.foodPackage) {
-        // Fetch venue package configuration if sourcePackageId is provided
-        let venuePackageConfig = null;
-        if (leadData.foodPackage.sourcePackageId && leadData.venueId) {
-          const { Venue } = await import("../models/Venue");
-          const venue = await Venue.findById(leadData.venueId).lean();
-          if (venue?.foodPackages) {
-            venuePackageConfig = venue.foodPackages.find(
-              (pkg: any) =>
-                pkg._id?.toString() ===
-                leadData?.foodPackage?.sourcePackageId?.toString()
-            )
-          }
-        }
+      // if (leadData.foodPackage) {
+      //   // Fetch venue package configuration if sourcePackageId is provided
+      //   let venuePackageConfig = null;
+      //   if (leadData.foodPackage.sourcePackageId && leadData.venueId) {
+      //     const { Venue } = await import("../models/Venue");
+      //     const venue = await Venue.findById(leadData.venueId).lean();
+      //     if (venue?.foodPackages) {
+      //       venuePackageConfig = venue.foodPackages.find(
+      //         (pkg: any) =>
+      //           pkg._id?.toString() ===
+      //           leadData?.foodPackage?.sourcePackageId?.toString()
+      //       )
+      //     }
+      //   }
 
-        leadData.foodPackage = recalcFoodPackage(
-          leadData.foodPackage,
-          venuePackageConfig
-        );
-      }
+      //   leadData.foodPackage = recalcFoodPackage(
+      //     leadData.foodPackage,
+      //     venuePackageConfig
+      //   );
+      // }
 
-      const lead = new Lead(leadData);
-      await lead.save();
+      const lead = new Lead(leadData)
+      await lead.save()
 
       await lead.populate([
-        { path: "venueId", select: "venueName venueType address" },
-        { path: "createdBy", select: "_id email firstName lastName" },
-        { path: "updatedBy", select: "_id email firstName lastName" },
-      ]);
+        { path: 'venueId', select: ' venueType address' },
+        { path: 'createdBy', select: '_id email firstName lastName' },
+        { path: 'updatedBy', select: '_id email firstName lastName' },
+      ])
 
-      return lead;
+      return lead
     } catch (error: any) {
       throw new Error(`Error creating lead: ${error.message}`);
     }

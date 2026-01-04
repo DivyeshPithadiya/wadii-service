@@ -23,18 +23,14 @@ const FoodItemSchema = new Schema(
       type: String,
       trim: true,
     },
-    pricePerPerson: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+
     isCustom: {
       type: Boolean,
       default: false,
     },
   },
   { _id: false }
-);
+)
 
 const FoodPackageSectionSchema = new Schema(
   {

@@ -28,7 +28,7 @@ export class BookingService {
           bookingData.venueId.toString(),
           bookingData.eventStartDateTime,
           bookingData.eventEndDateTime
-        );
+        )
 
         if (conflictResult.hasConflict) {
           const conflictDates = conflictResult.conflictingDays
@@ -40,66 +40,66 @@ export class BookingService {
                   bd.endDate
                 ).toLocaleDateString()})`
             )
-            .join(", ");
+            .join(', ')
           throw new Error(
             `Cannot create booking. The selected dates conflict with blackout days: ${conflictDates}`
-          );
+          )
         }
       }
-      if (bookingData.foodPackage && bookingData.numberOfGuests) {
-        // Fetch venue package configuration if sourcePackageId is provided
-        let venuePackageConfig = null;
-        if (bookingData.foodPackage.sourcePackageId && bookingData.venueId) {
-          const { Venue } = await import("../models/Venue");
-          const venue = await Venue.findById(bookingData.venueId).lean();
-          if (venue?.foodPackages) {
-            venuePackageConfig = venue.foodPackages.find(
-              (pkg: any) =>
-                pkg._id?.toString() ===
-                bookingData.foodPackage?.sourcePackageId?.toString()
-            );
-          }
-        }
+      // if (bookingData.foodPackage && bookingData.numberOfGuests) {
+      //   // Fetch venue package configuration if sourcePackageId is provided
+      //   let venuePackageConfig = null;
+      //   if (bookingData.foodPackage.sourcePackageId && bookingData.venueId) {
+      //     const { Venue } = await import("../models/Venue");
+      //     const venue = await Venue.findById(bookingData.venueId).lean();
+      //     if (venue?.foodPackages) {
+      //       venuePackageConfig = venue.foodPackages.find(
+      //         (pkg: any) =>
+      //           pkg._id?.toString() ===
+      //           bookingData.foodPackage?.sourcePackageId?.toString()
+      //       );
+      //     }
+      //   }
 
-        bookingData.foodPackage = recalcFoodPackage(
-          bookingData.foodPackage,
-          venuePackageConfig
-        );
+      //   bookingData.foodPackage = recalcFoodPackage(
+      //     bookingData.foodPackage,
+      //     venuePackageConfig
+      //   );
 
-        const totals = calculateTotals({
-          foodPackage: bookingData.foodPackage,
-          numberOfGuests: bookingData.numberOfGuests,
-          services: bookingData.services,
-        });
+      //   const totals = calculateTotals({
+      //     foodPackage: bookingData.foodPackage,
+      //     numberOfGuests: bookingData.numberOfGuests,
+      //     services: bookingData.services,
+      //   });
 
-        bookingData.foodCostTotal = totals.foodCostTotal;
+      //   bookingData.foodCostTotal = totals.foodCostTotal;
 
-        bookingData.payment = {
-          ...bookingData.payment,
-          totalAmount: Number(totals.totalAmount),
-          advanceAmount: bookingData.payment?.advanceAmount ?? 0,
-          paymentStatus: bookingData.payment?.paymentStatus ?? "unpaid",
-          paymentMode: bookingData.payment?.paymentMode ?? "cash",
-        };
-      }
+      //   bookingData.payment = {
+      //     ...bookingData.payment,
+      //     totalAmount: Number(totals.totalAmount),
+      //     advanceAmount: bookingData.payment?.advanceAmount ?? 0,
+      //     paymentStatus: bookingData.payment?.paymentStatus ?? "unpaid",
+      //     paymentMode: bookingData.payment?.paymentMode ?? "cash",
+      //   };
+      // }
 
-      const booking = new Booking(bookingData);
-      console.log("Booking instance created, saving to database...");
+      const booking = new Booking(bookingData)
+      console.log('Booking instance created, saving to database...')
 
-      await booking.save();
-      console.log("Booking saved successfully. ID:", booking._id);
+      await booking.save()
+      console.log('Booking saved successfully. ID:', booking._id)
 
       // Populate and return
-      console.log("Populating related fields...");
+      console.log('Populating related fields...')
       await booking.populate([
-        { path: "venueId", select: "venueName venueType address" },
-        { path: "leadId", select: "clientName contactNo email leadStatus" },
-        { path: "createdBy", select: "_id email firstName lastName" },
-        { path: "updatedBy", select: "_id email firstName lastName" },
-      ]);
+        { path: 'venueId', select: 'venueName venueType address' },
+        { path: 'leadId', select: 'clientName contactNo email leadStatus' },
+        { path: 'createdBy', select: '_id email firstName lastName' },
+        { path: 'updatedBy', select: '_id email firstName lastName' },
+      ])
 
-      console.log("Population complete. Returning booking.");
-      return booking;
+      console.log('Population complete. Returning booking.')
+      return booking
     } catch (error: any) {
       console.error("Error in BookingService.createBooking:", error);
       throw new Error(`Error creating booking: ${error.message}`);

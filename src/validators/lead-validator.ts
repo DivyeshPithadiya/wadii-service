@@ -9,9 +9,8 @@ const foodItemSchema = z.object({
   menuItemId: z.string().optional(),
   name: z.string().min(1),
   description: z.string().optional(),
-  pricePerPerson: z.number().min(0),
   isCustom: z.boolean(),
-});
+})
 
 /**
  * Food section schema
