@@ -56,7 +56,6 @@ export class LeadController {
         venueId: oid(req.body.venueId),
       };
 
-      console.log("Creating lead with data:", leadData);
 
       const lead = await LeadService.createLead(leadData);
 

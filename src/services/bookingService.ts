@@ -46,48 +46,64 @@ export class BookingService {
           )
         }
       }
-      // if (bookingData.foodPackage && bookingData.numberOfGuests) {
-      //   // Fetch venue package configuration if sourcePackageId is provided
-      //   let venuePackageConfig = null;
-      //   if (bookingData.foodPackage.sourcePackageId && bookingData.venueId) {
-      //     const { Venue } = await import("../models/Venue");
-      //     const venue = await Venue.findById(bookingData.venueId).lean();
-      //     if (venue?.foodPackages) {
-      //       venuePackageConfig = venue.foodPackages.find(
-      //         (pkg: any) =>
-      //           pkg._id?.toString() ===
-      //           bookingData.foodPackage?.sourcePackageId?.toString()
-      //       );
-      //     }
-      //   }
+      // Calculate totals if foodPackage and numberOfGuests are provided
+      if (bookingData.foodPackage && bookingData.numberOfGuests) {
+        // Fetch venue package configuration if sourcePackageId is provided
+        let venuePackageConfig = null;
+        if (bookingData.foodPackage.sourcePackageId && bookingData.venueId) {
+          const { Venue } = await import("../models/Venue");
+          const venue = await Venue.findById(bookingData.venueId).lean();
+          if (venue?.foodPackages) {
+            venuePackageConfig = venue.foodPackages.find(
+              (pkg: any) =>
+                pkg._id?.toString() ===
+                bookingData.foodPackage?.sourcePackageId?.toString()
+            );
+          }
+        }
 
-      //   bookingData.foodPackage = recalcFoodPackage(
-      //     bookingData.foodPackage,
-      //     venuePackageConfig
-      //   );
+        bookingData.foodPackage = recalcFoodPackage(
+          bookingData.foodPackage,
+          venuePackageConfig
+        );
 
-      //   const totals = calculateTotals({
-      //     foodPackage: bookingData.foodPackage,
-      //     numberOfGuests: bookingData.numberOfGuests,
-      //     services: bookingData.services,
-      //   });
+        const totals = calculateTotals({
+          foodPackage: bookingData.foodPackage,
+          numberOfGuests: bookingData.numberOfGuests,
+          services: bookingData.services,
+        });
 
-      //   bookingData.foodCostTotal = totals.foodCostTotal;
+        bookingData.foodCostTotal = totals.foodCostTotal;
 
-      //   bookingData.payment = {
-      //     ...bookingData.payment,
-      //     totalAmount: Number(totals.totalAmount),
-      //     advanceAmount: bookingData.payment?.advanceAmount ?? 0,
-      //     paymentStatus: bookingData.payment?.paymentStatus ?? "unpaid",
-      //     paymentMode: bookingData.payment?.paymentMode ?? "cash",
-      //   };
-      // }
+        const advanceAmount = bookingData.payment?.advanceAmount ?? 0;
+
+        bookingData.payment = {
+          ...bookingData.payment,
+          totalAmount: Number(totals.totalAmount),
+          advanceAmount: advanceAmount,
+          paymentStatus: bookingData.payment?.paymentStatus ?? "unpaid",
+          paymentMode: bookingData.payment?.paymentMode ?? "cash",
+        };
+      }
 
       const booking = new Booking(bookingData)
       console.log('Booking instance created, saving to database...')
 
       await booking.save()
       console.log('Booking saved successfully. ID:', booking._id)
+
+      // Create initial transaction if advance payment is provided
+      if (booking.payment?.advanceAmount && booking.payment.advanceAmount > 0) {
+        await this.createPaymentTransaction(
+          booking._id.toString(),
+          booking.payment.advanceAmount,
+          booking.payment.paymentMode,
+          "advance",
+          "Initial advance payment at booking creation",
+          bookingData.createdBy?.toString()
+        );
+        console.log('Initial advance transaction created for amount:', booking.payment.advanceAmount);
+      }
 
       // Populate and return
       console.log('Populating related fields...')
@@ -447,6 +463,8 @@ export class BookingService {
 
   /**
    * Update payment details
+   * NOTE: This method is deprecated. Use transactionService.createTransaction instead
+   * for proper transaction tracking. This is kept for backward compatibility.
    */
   static async updatePayment(
     bookingId: string,
@@ -462,19 +480,46 @@ export class BookingService {
         throw new Error("Booking not found");
       }
 
-      booking.payment.advanceAmount = advanceAmount;
-      booking.updatedBy = userId as any;
-      await booking.save(); // Triggers pre-save hook for payment calculation
+      // Calculate the additional payment amount
+      const currentAdvance = booking.payment.advanceAmount || 0;
+      const additionalAmount = advanceAmount - currentAdvance;
 
-      // Populate and return
-      await booking.populate([
-        { path: "venueId", select: "venueName venueType address" },
-        { path: "leadId", select: "clientName contactNo email leadStatus" },
-        { path: "createdBy", select: "_id email firstName lastName" },
-        { path: "updatedBy", select: "_id email firstName lastName" },
-      ]);
+      if (additionalAmount > 0) {
+        // Determine transaction type based on total amount
+        const totalAmount = booking.payment.totalAmount || 0;
+        const newTotal = advanceAmount;
+        let transactionType: "advance" | "partial" | "full" = "partial";
 
-      return booking;
+        if (currentAdvance === 0) {
+          transactionType = "advance";
+        } else if (newTotal >= totalAmount) {
+          transactionType = "full";
+        } else {
+          transactionType = "partial";
+        }
+
+        // Create transaction for the additional payment
+        await this.createPaymentTransaction(
+          bookingId,
+          additionalAmount,
+          booking.payment.paymentMode,
+          transactionType,
+          "Payment update",
+          userId
+        );
+        console.log(`Created transaction for additional payment of ${additionalAmount}`);
+      } else if (additionalAmount < 0) {
+        throw new Error("Cannot reduce advance amount. Refunds should be handled separately.");
+      }
+
+      // Fetch updated booking
+      const updatedBooking = await Booking.findById(oid(bookingId))
+        .populate("venueId", "venueName venueType address")
+        .populate("leadId", "clientName contactNo email leadStatus")
+        .populate("createdBy", "_id email firstName lastName")
+        .populate("updatedBy", "_id email firstName lastName");
+
+      return updatedBooking;
     } catch (error: any) {
       throw new Error(`Error updating payment: ${error.message}`);
     }
@@ -625,6 +670,67 @@ export class BookingService {
       return booking;
     } catch (error: any) {
       throw new Error(`Error restoring booking: ${error.message}`);
+    }
+  }
+
+  /**
+   * Helper: Create a payment transaction for a booking
+   * This creates a Transaction record and updates the booking's payment status
+   */
+  private static async createPaymentTransaction(
+    bookingId: string,
+    amount: number,
+    mode: string,
+    type: "advance" | "partial" | "full" | "vendor_payment" = "partial",
+    notes?: string,
+    createdBy?: string
+  ): Promise<void> {
+    try {
+      // Create the transaction record
+      const transaction = new Transaction({
+        bookingId: oid(bookingId),
+        direction: "inbound",
+        type: type,
+        amount: amount,
+        mode: mode,
+        status: "success",
+        paidAt: new Date(),
+        notes: notes || "",
+        createdBy: createdBy ? oid(createdBy) : undefined,
+      });
+
+      await transaction.save();
+
+      // Update booking payment status based on total transactions
+      const booking = await Booking.findById(oid(bookingId));
+      if (booking) {
+        // Calculate total paid from all successful inbound transactions
+        const totalPaid = await Transaction.aggregate([
+          {
+            $match: {
+              bookingId: oid(bookingId),
+              direction: "inbound",
+              status: "success",
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              total: { $sum: "$amount" },
+            },
+          },
+        ]);
+
+        const paidAmount = totalPaid.length > 0 ? totalPaid[0].total : 0;
+
+        // Update booking payment fields
+        booking.payment.advanceAmount = paidAmount;
+
+        // Payment status will be updated by pre-save hook
+        await booking.save();
+      }
+    } catch (error: any) {
+      throw new Error(`Error creating payment transaction: ${error.message}`);
     }
   }
 }
