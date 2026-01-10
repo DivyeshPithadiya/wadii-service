@@ -62,10 +62,13 @@ export class BookingService {
           }
         }
 
-        bookingData.foodPackage = recalcFoodPackage(
-          bookingData.foodPackage,
-          venuePackageConfig
-        );
+        // Only recalculate if totalPricePerPerson is not already set (preserve user edits)
+        if (!bookingData.foodPackage.totalPricePerPerson) {
+          bookingData.foodPackage = recalcFoodPackage(
+            bookingData.foodPackage,
+            venuePackageConfig
+          );
+        }
 
         const totals = calculateTotals({
           foodPackage: bookingData.foodPackage,
@@ -272,10 +275,13 @@ export class BookingService {
             }
           }
 
-          updateData.foodPackage = recalcFoodPackage(
-            updateData.foodPackage,
-            venuePackageConfig
-          );
+          // Only recalculate if totalPricePerPerson is not already set (preserve user edits)
+          if (!updateData.foodPackage.totalPricePerPerson) {
+            updateData.foodPackage = recalcFoodPackage(
+              updateData.foodPackage,
+              venuePackageConfig
+            );
+          }
         }
 
         // Recalculate food cost total if either foodPackage or numberOfGuests changed

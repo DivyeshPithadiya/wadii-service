@@ -27,6 +27,8 @@ export interface IFoodPackageSnapshot {
   sections: IFoodPackageSection[]
   defaultPrice?: number
   totalPricePerPerson: number
+  totalBasePrice?: number
+  totalAddonPrice?: number
 }
 
 export interface ISelectedMenuItem {

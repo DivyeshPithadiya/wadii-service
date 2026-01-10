@@ -52,10 +52,13 @@ export class LeadService {
       //     }
       //   }
 
-      //   leadData.foodPackage = recalcFoodPackage(
-      //     leadData.foodPackage,
-      //     venuePackageConfig
-      //   );
+      //   // Only recalculate if totalPricePerPerson is not already set (preserve user edits)
+      //   if (!leadData.foodPackage.totalPricePerPerson) {
+      //     leadData.foodPackage = recalcFoodPackage(
+      //       leadData.foodPackage,
+      //       venuePackageConfig
+      //     );
+      //   }
       // }
 
       const lead = new Lead(leadData)
@@ -199,10 +202,41 @@ export class LeadService {
   ): Promise<ILead | null> {
     try {
       if (updateData.foodPackage) {
-        // Fetch venue package configuration if sourcePackageId is provided
-        let venuePackageConfig = null;
-        if (updateData.foodPackage.sourcePackageId) {
-          const currentLead = await Lead.findById(leadId).lean();
+        // Fetch current lead to get existing foodPackage data
+        const currentLead = await Lead.findById(leadId).lean();
+        
+        // Only recalculate if totalPricePerPerson is not already set (preserve user edits)
+        if (!updateData.foodPackage.totalPricePerPerson) {
+          // Fetch venue package configuration if sourcePackageId is provided
+          let venuePackageConfig = null;
+          if (updateData.foodPackage.sourcePackageId) {
+            if (currentLead?.venueId) {
+              const { Venue } = await import("../models/Venue");
+              const venue = await Venue.findById(currentLead.venueId).lean();
+              if (venue?.foodPackages) {
+                venuePackageConfig = venue.foodPackages.find(
+                  (pkg: any) =>
+                    pkg._id?.toString() ===
+                    updateData?.foodPackage?.sourcePackageId?.toString()
+                );
+              }
+            }
+          }
+
+          updateData.foodPackage = recalcFoodPackage(
+            updateData.foodPackage,
+            venuePackageConfig
+          );
+        }
+
+        // FIX 1: Preserve defaultPrice from existing package or venue config
+        if (currentLead?.foodPackage?.defaultPrice && !updateData.foodPackage?.defaultPrice) {
+          if (updateData.foodPackage) {
+            updateData.foodPackage.defaultPrice = currentLead.foodPackage.defaultPrice;
+          }
+        } else if (!updateData.foodPackage?.defaultPrice && updateData.foodPackage?.sourcePackageId) {
+          // Fetch from venue config if no existing defaultPrice
+          let venuePackageConfig = null;
           if (currentLead?.venueId) {
             const { Venue } = await import("../models/Venue");
             const venue = await Venue.findById(currentLead.venueId).lean();
@@ -211,15 +245,24 @@ export class LeadService {
                 (pkg: any) =>
                   pkg._id?.toString() ===
                   updateData?.foodPackage?.sourcePackageId?.toString()
-              )
+              );
             }
+          }
+          if (updateData.foodPackage) {
+            updateData.foodPackage.defaultPrice = venuePackageConfig?.price || updateData.foodPackage.defaultPrice;
           }
         }
 
-        updateData.foodPackage = recalcFoodPackage(
-          updateData.foodPackage,
-          venuePackageConfig
-        );
+        // FIX 2: Force isCustomised to true when foodPackage is modified
+        if (updateData.foodPackage) {
+          updateData.foodPackage.isCustomised = true;
+        }
+
+        // FIX 3: Ensure immutable snapshot structure
+        if (updateData.foodPackage?.totalPricePerPerson && updateData.foodPackage?.defaultPrice) {
+          updateData.foodPackage.totalBasePrice = updateData.foodPackage.defaultPrice;
+          updateData.foodPackage.totalAddonPrice = updateData.foodPackage.totalPricePerPerson - updateData.foodPackage.defaultPrice;
+        }
       }
       const lead = await Lead.findByIdAndUpdate(
         leadId,
